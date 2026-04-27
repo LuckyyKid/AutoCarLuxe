@@ -1,4 +1,15 @@
 package com.example.autodrive.model.entity
 
-class Voiture {
-}
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "voiture")
+data class Voiture (
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val marque: String,
+    val modele: String,
+    val annee: Int,
+    val prixParJour: Double,
+    val estDisponible: Boolean,
+    val imageUrl: String?
+)
