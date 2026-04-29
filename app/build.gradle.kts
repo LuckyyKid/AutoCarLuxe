@@ -60,4 +60,5 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     implementation("androidx.room:room-runtime:2.6.1")
     kapt("androidx.room:room-compiler:2.6.1")
+    implementation("io.coil-kt:coil-compose:2.5.0")
 }

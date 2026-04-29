@@ -3,14 +3,18 @@ package com.example.autodrive
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.room.Room
+import coil.compose.AsyncImage
+
 import com.example.autodrive.model.AppDatabase
 import com.example.autodrive.model.entity.Voiture
 import com.example.autodrive.presenter.VoiturePresenter
@@ -84,6 +88,31 @@ class MainActivity : ComponentActivity(), VoitureContract.View {
                             ) {
 
                                 Column(modifier = Modifier.padding(12.dp)) {
+
+
+                                    val images = voiture.imageUrls
+                                        ?.split(",")
+                                        ?.map { it.trim() }
+                                        ?.filter { it.isNotEmpty() }
+                                        ?: emptyList()
+
+                                    if (images.isNotEmpty()) {
+                                        Row(
+                                            modifier = Modifier
+                                                .horizontalScroll(rememberScrollState())
+                                        ) {
+                                            images.forEach { url ->
+                                                AsyncImage(
+                                                    model = url,
+                                                    contentDescription = "Image voiture",
+                                                    modifier = Modifier
+                                                        .width(200.dp)
+                                                        .height(120.dp)
+                                                        .padding(4.dp)
+                                                )
+                                            }
+                                        }
+                                    }
 
                                     Text(
                                         "${voiture.marque} ${voiture.modele}",

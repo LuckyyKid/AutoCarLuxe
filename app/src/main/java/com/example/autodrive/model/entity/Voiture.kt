@@ -11,7 +11,7 @@ data class Voiture (
     val annee: Int,
     val prixParJour: Double,
     val estDisponible: Boolean,
-    val imageUrl: String?,
+    val imageUrls: String?,
     val description: String?,
     val ageMinimum: Int
 )
