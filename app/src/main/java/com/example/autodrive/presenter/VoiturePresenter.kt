@@ -18,4 +18,9 @@ class VoiturePresenter(
         voitureDao.insert(voiture)
         chargerVoitures()
     }
+
+    override fun supprimerVoiture(id: Long) {
+        voitureDao.deleteById(id)
+        chargerVoitures()
+    }
 }

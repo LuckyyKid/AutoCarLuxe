@@ -22,4 +22,7 @@ interface VoitureDao {
 
     @Query("SELECT * FROM voiture WHERE estDisponible = 1")
     fun getDisponibles(): List<Voiture>
+
+    @Query("DELETE FROM voiture WHERE id = :id")
+    fun deleteById(id: Long)
 }

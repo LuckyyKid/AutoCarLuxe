@@ -15,7 +15,6 @@ import com.example.autodrive.model.AppDatabase
 import com.example.autodrive.model.entity.Voiture
 import com.example.autodrive.presenter.VoiturePresenter
 import com.example.autodrive.presenter.contract.VoitureContract
-
 import com.example.autodrive.view.AddVoitureScreen
 
 class MainActivity : ComponentActivity(), VoitureContract.View {
@@ -40,7 +39,6 @@ class MainActivity : ComponentActivity(), VoitureContract.View {
         setContent {
 
             var showAddScreen by remember { mutableStateOf(false) }
-
 
             LaunchedEffect(Unit) {
                 presenter.chargerVoitures()
@@ -84,6 +82,16 @@ class MainActivity : ComponentActivity(), VoitureContract.View {
                                     Text("Année : ${voiture.annee}")
                                     Text("Prix : ${voiture.prixParJour}$")
                                     Text("Description : ${voiture.description}")
+
+
+                                    Button(
+                                        onClick = {
+                                            presenter.supprimerVoiture(voiture.id)
+                                        },
+                                        modifier = Modifier.padding(top = 8.dp)
+                                    ) {
+                                        Text("Supprimer")
+                                    }
                                 }
                             }
                         }
