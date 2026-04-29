@@ -22,6 +22,7 @@ import androidx.room.PrimaryKey
     ]
 )
 data class Reservation(
+
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val utilisateurId: Long,
     val voitureId: Long,
@@ -29,4 +30,5 @@ data class Reservation(
     val dateFin: String,
     val coutTotal: Double,
     val statut: String
+
 )

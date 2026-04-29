@@ -10,23 +10,33 @@ import com.example.autodrive.model.entity.Voiture
 interface VoitureDao {
 
     @Insert
-     fun insert(voiture: Voiture)
+    fun insert(voiture: Voiture)
+
+    @Update
+    fun update(voiture: Voiture)
 
     @Query("SELECT * FROM voiture")
-     fun getAll(): List<Voiture>
-
-    @Query("SELECT * FROM voiture WHERE marque LIKE :marque")
-     fun rechercherParMarque(marque: String): List<Voiture>
-
-    @Query("SELECT * FROM voiture WHERE prixParJour BETWEEN :min AND :max")
-     fun filtrerParPrix(min: Double, max: Double): List<Voiture>
-
-    @Query("SELECT * FROM voiture WHERE estDisponible = 1")
-    fun getDisponibles(): List<Voiture>
+    fun getAll(): List<Voiture>
 
     @Query("DELETE FROM voiture WHERE id = :id")
     fun deleteById(id: Long)
 
-    @Update
-    fun update(voiture: Voiture)
+    @Query("UPDATE voiture SET estDisponible = :dispo WHERE id = :id")
+    fun updateDisponibilite(id: Long, dispo: Boolean)
+
+    @Query("""
+        SELECT * FROM voiture
+        WHERE marque LIKE '%' || :recherche || '%'
+        OR modele LIKE '%' || :recherche || '%'
+    """)
+    fun rechercherVoitures(recherche: String): List<Voiture>
+
+    @Query("SELECT * FROM voiture WHERE marque = :marque")
+    fun filtrerParMarque(marque: String): List<Voiture>
+
+    @Query("SELECT * FROM voiture WHERE prixParJour BETWEEN :min AND :max")
+    fun filtrerParPrix(min: Double, max: Double): List<Voiture>
+
+    @Query("SELECT * FROM voiture WHERE estDisponible = 1")
+    fun getDisponibles(): List<Voiture>
 }

@@ -9,6 +9,5 @@ data class Utilisateur(
     val nom: String,
     val prenom: String,
     val email: String,
-    val motDePasseHash: String,
-    val dateNaissance: String
+    val password : String
 )
