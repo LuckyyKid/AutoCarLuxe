@@ -10,13 +10,13 @@ import com.example.autodrive.model.entity.Reservation
 interface ReservationDao {
 
     @Insert
-    suspend fun insert(reservation: Reservation)
+     fun insert(reservation: Reservation)
 
     @Query("SELECT * FROM reservation WHERE utilisateurId = :userId")
-    suspend fun getReservationsUtilisateur(userId: Long): List<Reservation>
+     fun getReservationsUtilisateur(userId: Long): List<Reservation>
 
     @Query("DELETE FROM reservation WHERE id = :id")
-    suspend fun supprimerReservation(id: Long)
+    fun supprimerReservation(id: Long)
 
     @Query("""
         SELECT * FROM reservation 
@@ -25,7 +25,7 @@ interface ReservationDao {
             dateDebut < :dateFin AND dateFin > :dateDebut
         )
     """)
-    suspend fun verifierConflit(
+     fun verifierConflit(
         voitureId: Long,
         dateDebut: String,
         dateFin: String

@@ -9,17 +9,20 @@ import com.example.autodrive.model.entity.Voiture
 interface VoitureDao {
 
     @Insert
-    suspend fun insert(voiture: Voiture)
+     fun insert(voiture: Voiture)
 
     @Query("SELECT * FROM voiture")
-    suspend fun getAll(): List<Voiture>
+     fun getAll(): List<Voiture>
 
     @Query("SELECT * FROM voiture WHERE marque LIKE :marque")
-    suspend fun rechercherParMarque(marque: String): List<Voiture>
+     fun rechercherParMarque(marque: String): List<Voiture>
 
     @Query("SELECT * FROM voiture WHERE prixParJour BETWEEN :min AND :max")
-    suspend fun filtrerParPrix(min: Double, max: Double): List<Voiture>
+     fun filtrerParPrix(min: Double, max: Double): List<Voiture>
 
     @Query("SELECT * FROM voiture WHERE estDisponible = 1")
-    suspend fun getDisponibles(): List<Voiture>
+    fun getDisponibles(): List<Voiture>
+
+    @Query("DELETE FROM voiture WHERE id = :id")
+    fun deleteById(id: Long)
 }
