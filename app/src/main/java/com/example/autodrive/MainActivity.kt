@@ -39,6 +39,7 @@ class MainActivity : ComponentActivity(), VoitureContract.View {
         setContent {
 
             var showAddScreen by remember { mutableStateOf(false) }
+            var voitureToEdit by remember { mutableStateOf<Voiture?>(null) }
 
             LaunchedEffect(Unit) {
                 presenter.chargerVoitures()
@@ -46,8 +47,15 @@ class MainActivity : ComponentActivity(), VoitureContract.View {
 
             if (showAddScreen) {
 
-                AddVoitureScreen { nouvelleVoiture ->
-                    presenter.ajouterVoiture(nouvelleVoiture)
+                AddVoitureScreen(voitureToEdit) { voiture ->
+
+                    if (voitureToEdit == null) {
+                        presenter.ajouterVoiture(voiture)
+                    } else {
+                        presenter.modifierVoiture(voiture)
+                    }
+
+                    voitureToEdit = null
                     showAddScreen = false
                 }
 
@@ -56,7 +64,10 @@ class MainActivity : ComponentActivity(), VoitureContract.View {
                 Column(modifier = Modifier.fillMaxSize()) {
 
                     Button(
-                        onClick = { showAddScreen = true },
+                        onClick = {
+                            voitureToEdit = null
+                            showAddScreen = true
+                        },
                         modifier = Modifier.padding(8.dp)
                     ) {
                         Text("Ajouter une voiture")
@@ -83,14 +94,28 @@ class MainActivity : ComponentActivity(), VoitureContract.View {
                                     Text("Prix : ${voiture.prixParJour}$")
                                     Text("Description : ${voiture.description}")
 
+                                    Row {
 
-                                    Button(
-                                        onClick = {
-                                            presenter.supprimerVoiture(voiture.id)
-                                        },
-                                        modifier = Modifier.padding(top = 8.dp)
-                                    ) {
-                                        Text("Supprimer")
+                                        Button(
+                                            onClick = {
+                                                voitureToEdit = voiture
+                                                showAddScreen = true
+                                            },
+                                            modifier = Modifier.padding(top = 8.dp)
+                                        ) {
+                                            Text("Modifier")
+                                        }
+
+                                        Spacer(modifier = Modifier.width(8.dp))
+
+                                        Button(
+                                            onClick = {
+                                                presenter.supprimerVoiture(voiture.id)
+                                            },
+                                            modifier = Modifier.padding(top = 8.dp)
+                                        ) {
+                                            Text("Supprimer")
+                                        }
                                     }
                                 }
                             }

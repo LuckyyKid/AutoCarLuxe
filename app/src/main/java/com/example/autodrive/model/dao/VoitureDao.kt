@@ -3,6 +3,7 @@ package com.example.autodrive.model.dao
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Update
 import com.example.autodrive.model.entity.Voiture
 
 @Dao
@@ -25,4 +26,7 @@ interface VoitureDao {
 
     @Query("DELETE FROM voiture WHERE id = :id")
     fun deleteById(id: Long)
+
+    @Update
+    fun update(voiture: Voiture)
 }

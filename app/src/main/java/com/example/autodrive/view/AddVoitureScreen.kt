@@ -7,14 +7,17 @@ import androidx.compose.ui.text.input.TextFieldValue
 import com.example.autodrive.model.entity.Voiture
 
 @Composable
-fun AddVoitureScreen(onAdd: (Voiture) -> Unit) {
+fun AddVoitureScreen(
+    voiture: Voiture? = null,
+    onSave: (Voiture) -> Unit
+) {
 
-    var marque by remember { mutableStateOf(TextFieldValue("")) }
-    var modele by remember { mutableStateOf(TextFieldValue("")) }
-    var prix by remember { mutableStateOf(TextFieldValue("")) }
-    var annee by remember { mutableStateOf(TextFieldValue("")) }
-    var imageUrl by remember { mutableStateOf(TextFieldValue("")) }
-    var description by remember { mutableStateOf(TextFieldValue("")) }
+    var marque by remember { mutableStateOf(TextFieldValue(voiture?.marque ?: "")) }
+    var modele by remember { mutableStateOf(TextFieldValue(voiture?.modele ?: "")) }
+    var prix by remember { mutableStateOf(TextFieldValue(voiture?.prixParJour?.toString() ?: "")) }
+    var annee by remember { mutableStateOf(TextFieldValue(voiture?.annee?.toString() ?: "")) }
+    var imageUrl by remember { mutableStateOf(TextFieldValue(voiture?.imageUrl ?: "")) }
+    var description by remember { mutableStateOf(TextFieldValue(voiture?.description ?: "")) }
 
     Column {
 
@@ -26,7 +29,9 @@ fun AddVoitureScreen(onAdd: (Voiture) -> Unit) {
         TextField(value = description, onValueChange = { description = it }, label = { Text("Description") })
 
         Button(onClick = {
-            val voiture = Voiture(
+
+            val voitureFinale = Voiture(
+                id = voiture?.id ?: 0,
                 marque = marque.text,
                 modele = modele.text,
                 annee = annee.text.toInt(),
@@ -37,10 +42,10 @@ fun AddVoitureScreen(onAdd: (Voiture) -> Unit) {
                 description = description.text
             )
 
-            onAdd(voiture)
+            onSave(voitureFinale)
 
         }) {
-            Text("Ajouter voiture")
+            Text(if (voiture == null) "Ajouter voiture" else "Modifier voiture")
         }
     }
 }

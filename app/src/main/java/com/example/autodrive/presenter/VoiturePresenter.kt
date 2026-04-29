@@ -23,4 +23,9 @@ class VoiturePresenter(
         voitureDao.deleteById(id)
         chargerVoitures()
     }
+
+    override fun modifierVoiture(voiture: Voiture) {
+        voitureDao.update(voiture)
+        chargerVoitures()
+    }
 }
