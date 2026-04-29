@@ -9,9 +9,9 @@ import com.example.autodrive.model.entity.Utilisateur
 interface UtilisateurDao {
 
     @Insert
-    suspend fun insert(utilisateur: Utilisateur)
+     fun insert(utilisateur: Utilisateur)
 
     @Query("SELECT * FROM utilisateur WHERE email = :email")
-    suspend fun getByEmail(email: String): Utilisateur?
+     fun getByEmail(email: String): Utilisateur?
 
 }
