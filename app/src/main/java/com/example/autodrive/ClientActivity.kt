@@ -34,6 +34,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -66,15 +67,21 @@ class ClientActivity : ComponentActivity(), ClientContract.View {
 
         setContent {
             AutoDriveTheme {
-                var selectedVoiture by remember { mutableStateOf<Voiture?>(null) }
-                var recherche by remember { mutableStateOf(presenter.chargerDerniereRecherche()) }
-                var marqueFiltre by remember { mutableStateOf("") }
-                var modeleFiltre by remember { mutableStateOf("") }
-                var prixMinFiltre by remember { mutableStateOf("") }
-                var prixMaxFiltre by remember { mutableStateOf("") }
-                var anneeFiltre by remember { mutableStateOf("") }
-                var showOnlyDisponible by remember { mutableStateOf(false) }
-                var showFilterDialog by remember { mutableStateOf(false) }
+                var selectedVoitureId by rememberSaveable { mutableStateOf(0L) }
+                var recherche by rememberSaveable { mutableStateOf(presenter.chargerDerniereRecherche()) }
+                var marqueFiltre by rememberSaveable { mutableStateOf("") }
+                var modeleFiltre by rememberSaveable { mutableStateOf("") }
+                var prixMinFiltre by rememberSaveable { mutableStateOf("") }
+                var prixMaxFiltre by rememberSaveable { mutableStateOf("") }
+                var anneeFiltre by rememberSaveable { mutableStateOf("") }
+                var showOnlyDisponible by rememberSaveable { mutableStateOf(false) }
+                var showFilterDialog by rememberSaveable { mutableStateOf(false) }
+
+                val selectedVoiture = if (selectedVoitureId == 0L) {
+                    null
+                } else {
+                    voituresState.firstOrNull { it.id == selectedVoitureId }
+                }
 
                 fun chargerVoitures() {
                     presenter.chargerVoitures(
@@ -94,9 +101,9 @@ class ClientActivity : ComponentActivity(), ClientContract.View {
 
                 if (selectedVoiture != null) {
                     VoitureDetailScreen(
-                        voiture = selectedVoiture!!,
+                        voiture = selectedVoiture,
                         onBack = {
-                            selectedVoiture = null
+                            selectedVoitureId = 0L
                             chargerVoitures()
                         }
                     )
@@ -264,7 +271,7 @@ class ClientActivity : ComponentActivity(), ClientContract.View {
                                     shape = RoundedCornerShape(16.dp),
                                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                                     colors = CardDefaults.cardColors(containerColor = Color.White),
-                                    onClick = { selectedVoiture = voiture }
+                                    onClick = { selectedVoitureId = voiture.id }
                                 ) {
                                     Column {
                                         Box(modifier = Modifier.fillMaxWidth()) {

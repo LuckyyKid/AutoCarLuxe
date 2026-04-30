@@ -12,6 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -40,8 +41,13 @@ class AdminActivity : ComponentActivity(), VoitureContract.View {
         setContent {
             AutoDriveTheme {
 
-            var showAddScreen by remember { mutableStateOf(false) }
-            var voitureToEdit by remember { mutableStateOf<Voiture?>(null) }
+            var showAddScreen by rememberSaveable { mutableStateOf(false) }
+            var voitureToEditId by rememberSaveable { mutableStateOf(0L) }
+            val voitureToEdit = if (voitureToEditId == 0L) {
+                null
+            } else {
+                voituresState.firstOrNull { it.id == voitureToEditId }
+            }
 
             LaunchedEffect(Unit) {
                 presenter.chargerVoitures()
@@ -49,15 +55,22 @@ class AdminActivity : ComponentActivity(), VoitureContract.View {
 
             if (showAddScreen) {
 
-                AddVoitureScreen(voitureToEdit) { voiture ->
-                    if (voitureToEdit == null) {
-                        presenter.ajouterVoiture(voiture)
-                    } else {
-                        presenter.modifierVoiture(voiture)
+                AddVoitureScreen(
+                    voiture = voitureToEdit,
+                    onCancel = {
+                        voitureToEditId = 0L
+                        showAddScreen = false
+                    },
+                    onSave = { voiture ->
+                        if (voitureToEdit == null) {
+                            presenter.ajouterVoiture(voiture)
+                        } else {
+                            presenter.modifierVoiture(voiture)
+                        }
+                        voitureToEditId = 0L
+                        showAddScreen = false
                     }
-                    voitureToEdit = null
-                    showAddScreen = false
-                }
+                )
 
             } else {
 
@@ -100,7 +113,7 @@ class AdminActivity : ComponentActivity(), VoitureContract.View {
 
                     Button(
                         onClick = {
-                            voitureToEdit = null
+                            voitureToEditId = 0L
                             showAddScreen = true
                         },
                         shape = RoundedCornerShape(50),
@@ -214,7 +227,7 @@ class AdminActivity : ComponentActivity(), VoitureContract.View {
                                         ) {
                                             OutlinedButton(
                                                 onClick = {
-                                                    voitureToEdit = voiture
+                                                    voitureToEditId = voiture.id
                                                     showAddScreen = true
                                                 },
                                                 shape = RoundedCornerShape(50),

@@ -27,10 +27,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -53,9 +55,16 @@ class ReservationActivity : ComponentActivity(), ReservationContract.View {
     private lateinit var presenter: ReservationPresenter
     private var coutTotalState by mutableStateOf(0.0)
     private var messageState by mutableStateOf("")
+    private var dateDebutInitial = ""
+    private var dateFinInitial = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        coutTotalState = savedInstanceState?.getDouble("cout_total") ?: 0.0
+        messageState = savedInstanceState?.getString("message_state") ?: ""
+        dateDebutInitial = savedInstanceState?.getString("date_debut") ?: ""
+        dateFinInitial = savedInstanceState?.getString("date_fin") ?: ""
 
         val voiture = intent.getSerializableExtra("voiture") as Voiture
         presenter = ReservationPresenter(
@@ -69,13 +78,21 @@ class ReservationActivity : ComponentActivity(), ReservationContract.View {
         setContent {
             AutoDriveTheme {
                 val context = LocalContext.current
-                var dateDebut by remember { mutableStateOf<LocalDate?>(null) }
-                var dateFin by remember { mutableStateOf<LocalDate?>(null) }
+                var dateDebut by rememberSaveable { mutableStateOf(dateDebutInitial) }
+                var dateFin by rememberSaveable { mutableStateOf(dateFinInitial) }
+
+                LaunchedEffect(dateDebut) {
+                    dateDebutInitial = dateDebut
+                }
+
+                LaunchedEffect(dateFin) {
+                    dateFinInitial = dateFin
+                }
 
                 fun calculer() {
                     presenter.calculerCout(
-                        dateDebut?.toString(),
-                        dateFin?.toString(),
+                        dateDebut.ifBlank { null },
+                        dateFin.ifBlank { null },
                         voiture.prixParJour
                     )
                 }
@@ -157,7 +174,7 @@ class ReservationActivity : ComponentActivity(), ReservationContract.View {
                                 DatePickerDialog(
                                     context,
                                     { _, year, month, day ->
-                                        dateDebut = LocalDate.of(year, month + 1, day)
+                                        dateDebut = LocalDate.of(year, month + 1, day).toString()
                                         calculer()
                                     },
                                     cal.get(Calendar.YEAR),
@@ -171,7 +188,7 @@ class ReservationActivity : ComponentActivity(), ReservationContract.View {
                                 .height(50.dp)
                         ) {
                             Text(
-                                if (dateDebut == null) "Choisir date debut" else "Debut : $dateDebut",
+                                if (dateDebut.isBlank()) "Choisir date debut" else "Debut : $dateDebut",
                                 fontWeight = FontWeight.Medium
                             )
                         }
@@ -184,7 +201,7 @@ class ReservationActivity : ComponentActivity(), ReservationContract.View {
                                 DatePickerDialog(
                                     context,
                                     { _, year, month, day ->
-                                        dateFin = LocalDate.of(year, month + 1, day)
+                                        dateFin = LocalDate.of(year, month + 1, day).toString()
                                         calculer()
                                     },
                                     cal.get(Calendar.YEAR),
@@ -198,7 +215,7 @@ class ReservationActivity : ComponentActivity(), ReservationContract.View {
                                 .height(50.dp)
                         ) {
                             Text(
-                                if (dateFin == null) "Choisir date fin" else "Fin : $dateFin",
+                                if (dateFin.isBlank()) "Choisir date fin" else "Fin : $dateFin",
                                 fontWeight = FontWeight.Medium
                             )
                         }
@@ -240,8 +257,8 @@ class ReservationActivity : ComponentActivity(), ReservationContract.View {
                                 presenter.confirmerReservation(
                                     voitureId = voiture.id,
                                     disponible = voiture.estDisponible,
-                                    dateDebut = dateDebut?.toString(),
-                                    dateFin = dateFin?.toString(),
+                                    dateDebut = dateDebut.ifBlank { null },
+                                    dateFin = dateFin.ifBlank { null },
                                     prixParJour = voiture.prixParJour
                                 )
 
@@ -319,5 +336,13 @@ class ReservationActivity : ComponentActivity(), ReservationContract.View {
 
     override fun reservationConfirmee() {
         messageState = ""
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putDouble("cout_total", coutTotalState)
+        outState.putString("message_state", messageState)
+        outState.putString("date_debut", dateDebutInitial)
+        outState.putString("date_fin", dateFinInitial)
     }
 }
