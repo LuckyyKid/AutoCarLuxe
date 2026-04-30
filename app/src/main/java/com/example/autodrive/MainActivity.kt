@@ -1,107 +1,81 @@
 package com.example.autodrive
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.room.Room
-import com.example.autodrive.model.AppDatabase
-import com.example.autodrive.model.entity.Voiture
-import com.example.autodrive.presenter.VoiturePresenter
-import com.example.autodrive.presenter.contract.VoitureContract
-import com.example.autodrive.view.AddVoitureScreen
+import androidx.compose.ui.unit.sp
+import com.example.autodrive.ui.theme.AutoDriveTheme
 
-class MainActivity : ComponentActivity(), VoitureContract.View {
-
-    private lateinit var presenter: VoiturePresenter
-    private var voituresState by mutableStateOf<List<Voiture>>(emptyList())
+class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val db = Room.databaseBuilder(
-            applicationContext,
-            AppDatabase::class.java,
-            "autodrive-db"
-        )
-            .allowMainThreadQueries()
-            .build()
-
-        val voitureDao = db.voitureDao()
-        presenter = VoiturePresenter(this, voitureDao)
-
         setContent {
+            AutoDriveTheme {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color(0xFFF7F7F7))
+                        .padding(32.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
 
-            var showAddScreen by remember { mutableStateOf(false) }
+                    Text(
+                        "AutoDrive",
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
 
-            LaunchedEffect(Unit) {
-                presenter.chargerVoitures()
-            }
+                    Spacer(modifier = Modifier.height(6.dp))
 
-            if (showAddScreen) {
+                    Text(
+                        "Location de voitures",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color(0xFF888888)
+                    )
 
-                AddVoitureScreen { nouvelleVoiture ->
-                    presenter.ajouterVoiture(nouvelleVoiture)
-                    showAddScreen = false
-                }
-
-            } else {
-
-                Column(modifier = Modifier.fillMaxSize()) {
+                    Spacer(modifier = Modifier.height(48.dp))
 
                     Button(
-                        onClick = { showAddScreen = true },
-                        modifier = Modifier.padding(8.dp)
+                        onClick = {
+                            startActivity(Intent(this@MainActivity, ClientActivity::class.java))
+                        },
+                        shape = RoundedCornerShape(50),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp)
                     ) {
-                        Text("Ajouter une voiture")
+                        Text("Espace Client", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                     }
 
-                    LazyColumn {
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                        items(voituresState) { voiture ->
-
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(8.dp)
-                            ) {
-
-                                Column(modifier = Modifier.padding(12.dp)) {
-
-                                    Text(
-                                        "${voiture.marque} ${voiture.modele}",
-                                        style = MaterialTheme.typography.titleMedium
-                                    )
-
-                                    Text("Année : ${voiture.annee}")
-                                    Text("Prix : ${voiture.prixParJour}$")
-                                    Text("Description : ${voiture.description}")
-
-
-                                    Button(
-                                        onClick = {
-                                            presenter.supprimerVoiture(voiture.id)
-                                        },
-                                        modifier = Modifier.padding(top = 8.dp)
-                                    ) {
-                                        Text("Supprimer")
-                                    }
-                                }
-                            }
-                        }
+                    OutlinedButton(
+                        onClick = {
+                            startActivity(Intent(this@MainActivity, AdminActivity::class.java))
+                        },
+                        shape = RoundedCornerShape(50),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp)
+                    ) {
+                        Text("Espace Admin", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                     }
                 }
             }
         }
-    }
-
-    override fun afficherVoitures(voitures: List<Voiture>) {
-        voituresState = voitures
     }
 }

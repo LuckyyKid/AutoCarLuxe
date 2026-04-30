@@ -12,6 +12,8 @@ interface VoitureContract {
         fun chargerVoitures()
         fun ajouterVoiture(voiture: Voiture)
         fun supprimerVoiture(id: Long)
+
+        fun modifierVoiture(voiture: Voiture)
     }
 
 
