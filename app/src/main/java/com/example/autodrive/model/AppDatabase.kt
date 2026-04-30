@@ -15,7 +15,7 @@ import com.example.autodrive.model.entity.Voiture
 
 @Database(
     entities = [Voiture::class, Utilisateur::class, Reservation::class],
-    version = 2
+    version = 3
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun voitureDao(): VoitureDao
@@ -31,6 +31,17 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_reservation_utilisateurId ON reservation(utilisateurId)"
+                )
+                database.execSQL(
+                    "CREATE INDEX IF NOT EXISTS index_reservation_voitureId ON reservation(voitureId)"
+                )
+            }
+        }
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -38,7 +49,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "autodrive-db"
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .allowMainThreadQueries()
                     .build()
 

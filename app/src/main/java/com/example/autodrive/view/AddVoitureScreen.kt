@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -19,16 +20,17 @@ import com.example.autodrive.model.entity.Voiture
 @Composable
 fun AddVoitureScreen(
     voiture: Voiture? = null,
+    onCancel: () -> Unit,
     onSave: (Voiture) -> Unit
 ) {
 
-    var marque by remember { mutableStateOf(TextFieldValue(voiture?.marque ?: "")) }
-    var modele by remember { mutableStateOf(TextFieldValue(voiture?.modele ?: "")) }
-    var prix by remember { mutableStateOf(TextFieldValue(voiture?.prixParJour?.toString() ?: "")) }
-    var annee by remember { mutableStateOf(TextFieldValue(voiture?.annee?.toString() ?: "")) }
-    var imageUrls by remember { mutableStateOf(TextFieldValue(voiture?.imageUrls ?: "")) }
-    var description by remember { mutableStateOf(TextFieldValue(voiture?.description ?: "")) }
-    var estDisponible by remember { mutableStateOf(voiture?.estDisponible ?: true) }
+    var marque by rememberSaveable(voiture?.id, stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue(voiture?.marque ?: "")) }
+    var modele by rememberSaveable(voiture?.id, stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue(voiture?.modele ?: "")) }
+    var prix by rememberSaveable(voiture?.id, stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue(voiture?.prixParJour?.toString() ?: "")) }
+    var annee by rememberSaveable(voiture?.id, stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue(voiture?.annee?.toString() ?: "")) }
+    var imageUrls by rememberSaveable(voiture?.id, stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue(voiture?.imageUrls ?: "")) }
+    var description by rememberSaveable(voiture?.id, stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue(voiture?.description ?: "")) }
+    var estDisponible by rememberSaveable(voiture?.id) { mutableStateOf(voiture?.estDisponible ?: true) }
 
 
     val fieldColors = OutlinedTextFieldDefaults.colors(
@@ -48,6 +50,21 @@ fun AddVoitureScreen(
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            TextButton(onClick = onCancel) {
+                Text(
+                    "Retour",
+                    color = Color(0xFF1A1A1A),
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+        }
 
         Text(
             if (voiture == null) "Ajouter une voiture" else "Modifier la voiture",
@@ -190,6 +207,22 @@ fun AddVoitureScreen(
             Text(
                 if (voiture == null) "Ajouter la voiture" else "Enregistrer les modifications",
                 fontWeight = FontWeight.Bold,
+                fontSize = 15.sp
+            )
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        OutlinedButton(
+            onClick = onCancel,
+            shape = RoundedCornerShape(50),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+        ) {
+            Text(
+                "Annuler",
+                fontWeight = FontWeight.Medium,
                 fontSize = 15.sp
             )
         }

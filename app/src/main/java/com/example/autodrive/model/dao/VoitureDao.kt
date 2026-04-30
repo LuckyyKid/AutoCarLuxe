@@ -18,6 +18,12 @@ interface VoitureDao {
     @Query("SELECT * FROM voiture")
     fun getAll(): List<Voiture>
 
+    @Query("SELECT * FROM voiture ORDER BY prixParJour ASC")
+    fun getAllOrderByPrix(): List<Voiture>
+
+    @Query("SELECT * FROM voiture WHERE id = :id LIMIT 1")
+    fun getById(id: Long): Voiture?
+
     @Query("DELETE FROM voiture WHERE id = :id")
     fun deleteById(id: Long)
 

@@ -26,4 +26,20 @@ class UtilisateurRepository(context: Context) {
 
         return utilisateur!!
     }
+
+    fun getAll(): List<Utilisateur> {
+        return utilisateurDao.getAll()
+    }
+
+    fun getById(id: Long): Utilisateur? {
+        return utilisateurDao.getById(id)
+    }
+
+    fun update(utilisateur: Utilisateur) {
+        utilisateurDao.update(utilisateur)
+    }
+
+    fun delete(utilisateur: Utilisateur) {
+        utilisateurDao.delete(utilisateur)
+    }
 }

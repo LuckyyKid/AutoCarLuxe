@@ -1,5 +1,6 @@
 package com.example.autodrive.presenter
 
+import com.example.autodrive.model.repository.ClientFilter
 import com.example.autodrive.model.repository.VoitureRepository
 import com.example.autodrive.model.session.UserSession
 import com.example.autodrive.presenter.contract.ClientContract
@@ -27,43 +28,15 @@ class ClientPresenter(
         anneeFiltre: String,
         seulementDisponibles: Boolean
     ) {
-        var resultat = if (recherche.isNotBlank()) {
-            voitureRepository.rechercherVoitures(recherche)
-        } else {
-            voitureRepository.getAll()
-        }
-
-        if (marqueFiltre.isNotBlank()) {
-            resultat = resultat.filter {
-                it.marque.contains(marqueFiltre, ignoreCase = true)
-            }
-        }
-
-        if (modeleFiltre.isNotBlank()) {
-            resultat = resultat.filter {
-                it.modele.contains(modeleFiltre, ignoreCase = true)
-            }
-        }
-
-        val prixMin = prixMinFiltre.toDoubleOrNull()
-        val prixMax = prixMaxFiltre.toDoubleOrNull()
-
-        if (prixMin != null) {
-            resultat = resultat.filter { it.prixParJour >= prixMin }
-        }
-
-        if (prixMax != null) {
-            resultat = resultat.filter { it.prixParJour <= prixMax }
-        }
-
-        if (anneeFiltre.isNotBlank()) {
-            resultat = resultat.filter { it.annee.toString() == anneeFiltre }
-        }
-
-        if (seulementDisponibles) {
-            resultat = resultat.filter { it.estDisponible }
-        }
-
-        view.afficherVoitures(resultat)
+        val filter = ClientFilter(
+            recherche = recherche,
+            marque = marqueFiltre,
+            modele = modeleFiltre,
+            prixMin = prixMinFiltre,
+            prixMax = prixMaxFiltre,
+            annee = anneeFiltre,
+            seulementDisponibles = seulementDisponibles
+        )
+        view.afficherVoitures(voitureRepository.filtrerVoitures(filter))
     }
 }
