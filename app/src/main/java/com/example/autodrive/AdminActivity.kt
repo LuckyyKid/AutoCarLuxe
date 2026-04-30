@@ -19,10 +19,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.room.Room
 import coil.compose.AsyncImage
-import com.example.autodrive.model.AppDatabase
 import com.example.autodrive.model.entity.Voiture
+import com.example.autodrive.model.repository.VoitureRepository
 import com.example.autodrive.presenter.VoiturePresenter
 import com.example.autodrive.presenter.contract.VoitureContract
 import com.example.autodrive.view.AddVoitureScreen
@@ -36,16 +35,7 @@ class AdminActivity : ComponentActivity(), VoitureContract.View {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val db = Room.databaseBuilder(
-            applicationContext,
-            AppDatabase::class.java,
-            "autodrive-db"
-        )
-            .allowMainThreadQueries()
-            .build()
-
-        val voitureDao = db.voitureDao()
-        presenter = VoiturePresenter(this, voitureDao)
+        presenter = VoiturePresenter(this, VoitureRepository(applicationContext))
 
         setContent {
             AutoDriveTheme {

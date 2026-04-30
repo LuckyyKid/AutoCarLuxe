@@ -25,6 +25,9 @@ interface ReservationDao {
     @Query("UPDATE reservation SET statut = 'ANNULEE' WHERE id = :id")
     fun annulerReservation(id: Long)
 
+    @Query("UPDATE reservation SET statut = 'TERMINEE' WHERE id = :id")
+    fun terminerReservation(id: Long)
+
     @Query("""
         SELECT * FROM reservation
         WHERE voitureId = :voitureId
