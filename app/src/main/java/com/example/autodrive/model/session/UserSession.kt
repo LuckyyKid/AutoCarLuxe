@@ -2,6 +2,7 @@ package com.example.autodrive.model.session
 
 import android.content.Context
 
+// AI codex
 class UserSession(context: Context) {
 
     private val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)

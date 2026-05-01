@@ -30,11 +30,9 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,6 +53,18 @@ class ClientActivity : ComponentActivity(), ClientContract.View {
 
     private lateinit var presenter: ClientPresenter
     private var voituresState by mutableStateOf<List<Voiture>>(emptyList())
+    private var selectedVoitureId by mutableStateOf(0L)
+    private var recherche by mutableStateOf("")
+    private var marqueFiltre by mutableStateOf("")
+    private var modeleFiltre by mutableStateOf("")
+    private var prixMinFiltre by mutableStateOf("")
+    private var prixMaxFiltre by mutableStateOf("")
+    private var anneeFiltre by mutableStateOf("")
+    private var showOnlyDisponible by mutableStateOf(false)
+    private var showFilterDialog by mutableStateOf(false)
+
+    private val selectedVoiture: Voiture?
+        get() = voituresState.firstOrNull { it.id == selectedVoitureId }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,315 +74,447 @@ class ClientActivity : ComponentActivity(), ClientContract.View {
             VoitureRepository(applicationContext),
             UserSession(applicationContext)
         )
+        recherche = presenter.chargerDerniereRecherche()
+        chargerVoitures()
 
         setContent {
             AutoDriveTheme {
-                var selectedVoitureId by rememberSaveable { mutableStateOf(0L) }
-                var recherche by rememberSaveable { mutableStateOf(presenter.chargerDerniereRecherche()) }
-                var marqueFiltre by rememberSaveable { mutableStateOf("") }
-                var modeleFiltre by rememberSaveable { mutableStateOf("") }
-                var prixMinFiltre by rememberSaveable { mutableStateOf("") }
-                var prixMaxFiltre by rememberSaveable { mutableStateOf("") }
-                var anneeFiltre by rememberSaveable { mutableStateOf("") }
-                var showOnlyDisponible by rememberSaveable { mutableStateOf(false) }
-                var showFilterDialog by rememberSaveable { mutableStateOf(false) }
-
-                val selectedVoiture = if (selectedVoitureId == 0L) {
-                    null
-                } else {
-                    voituresState.firstOrNull { it.id == selectedVoitureId }
-                }
-
-                fun chargerVoitures() {
-                    presenter.chargerVoitures(
-                        recherche = recherche,
-                        marqueFiltre = marqueFiltre,
-                        modeleFiltre = modeleFiltre,
-                        prixMinFiltre = prixMinFiltre,
-                        prixMaxFiltre = prixMaxFiltre,
-                        anneeFiltre = anneeFiltre,
-                        seulementDisponibles = showOnlyDisponible
-                    )
-                }
-
-                LaunchedEffect(Unit) {
-                    chargerVoitures()
-                }
-
-                if (selectedVoiture != null) {
-                    VoitureDetailScreen(
-                        voiture = selectedVoiture,
-                        onBack = {
-                            selectedVoitureId = 0L
-                            chargerVoitures()
-                        }
-                    )
-                } else {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color(0xFFF7F7F7))
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(Color.White)
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            TextButton(onClick = { finish() }) {
-                                Text(
-                                    "Menu",
-                                    color = Color(0xFF1A1A1A),
-                                    fontWeight = FontWeight.Medium,
-                                    fontSize = 14.sp
-                                )
-                            }
-
-                            Text(
-                                "AutoDrive",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF1A1A1A)
-                            )
-
-                            TextButton(
-                                onClick = {
-                                    startActivity(
-                                        Intent(this@ClientActivity, MesReservationsActivity::class.java)
-                                    )
-                                }
-                            ) {
-                                Text(
-                                    "Reservations",
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.SemiBold,
-                                    fontSize = 14.sp
-                                )
-                            }
-                        }
-
-                        Divider(color = Color(0xFFEEEEEE))
-
-                        OutlinedTextField(
-                            value = recherche,
-                            onValueChange = {
-                                recherche = it
-                                presenter.enregistrerDerniereRecherche(it)
-                                chargerVoitures()
-                            },
-                            placeholder = { Text("Rechercher une voiture", color = Color(0xFFAAAAAA)) },
-                            shape = RoundedCornerShape(50),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                unfocusedContainerColor = Color(0xFFF0F0F0),
-                                focusedContainerColor = Color(0xFFF0F0F0),
-                                unfocusedBorderColor = Color.Transparent,
-                                focusedBorderColor = MaterialTheme.colorScheme.primary
-                            ),
-                            singleLine = true,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 12.dp)
-                        )
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Button(
-                                onClick = { showFilterDialog = true },
-                                shape = RoundedCornerShape(50),
-                                modifier = Modifier.height(44.dp)
-                            ) {
-                                Text("Filtrer", fontWeight = FontWeight.SemiBold)
-                            }
-
-                            if (
-                                marqueFiltre.isNotBlank() ||
-                                modeleFiltre.isNotBlank() ||
-                                prixMinFiltre.isNotBlank() ||
-                                prixMaxFiltre.isNotBlank() ||
-                                anneeFiltre.isNotBlank() ||
-                                showOnlyDisponible
-                            ) {
-                                TextButton(
-                                    onClick = {
-                                        marqueFiltre = ""
-                                        modeleFiltre = ""
-                                        prixMinFiltre = ""
-                                        prixMaxFiltre = ""
-                                        anneeFiltre = ""
-                                        showOnlyDisponible = false
-                                        chargerVoitures()
-                                    }
-                                ) {
-                                    Text("Reinitialiser")
-                                }
-                            }
-                        }
-
-                        Text(
-                            text = construireResumeFiltres(
-                                marqueFiltre = marqueFiltre,
-                                modeleFiltre = modeleFiltre,
-                                prixMinFiltre = prixMinFiltre,
-                                prixMaxFiltre = prixMaxFiltre,
-                                anneeFiltre = anneeFiltre,
-                                seulementDisponibles = showOnlyDisponible
-                            ),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF666666),
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
-                        )
-
-                        if (showFilterDialog) {
-                            FilterDialog(
-                                marqueSelectionnee = marqueFiltre,
-                                modeleSelectionne = modeleFiltre,
-                                prixMinSelectionne = prixMinFiltre,
-                                prixMaxSelectionne = prixMaxFiltre,
-                                anneeSelectionnee = anneeFiltre,
-                                seulementDisponibles = showOnlyDisponible,
-                                onDismiss = { showFilterDialog = false },
-                                onApply = { marque, modele, prixMin, prixMax, annee, disponibles ->
-                                    marqueFiltre = marque
-                                    modeleFiltre = modele
-                                    prixMinFiltre = prixMin
-                                    prixMaxFiltre = prixMax
-                                    anneeFiltre = annee
-                                    showOnlyDisponible = disponibles
-                                    showFilterDialog = false
-                                    chargerVoitures()
-                                }
-                            )
-                        }
-
-                        LazyColumn(
-                            contentPadding = PaddingValues(
-                                start = 16.dp,
-                                end = 16.dp,
-                                top = 4.dp,
-                                bottom = 24.dp
-                            ),
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            items(voituresState) { voiture ->
-                                val firstImage = voiture.imageUrls
-                                    ?.split(",")
-                                    ?.firstOrNull()
-                                    ?.trim()
-
-                                Card(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(16.dp),
-                                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                                    onClick = { selectedVoitureId = voiture.id }
-                                ) {
-                                    Column {
-                                        Box(modifier = Modifier.fillMaxWidth()) {
-                                            if (!firstImage.isNullOrEmpty()) {
-                                                AsyncImage(
-                                                    model = firstImage,
-                                                    contentDescription = "Image voiture",
-                                                    contentScale = ContentScale.Crop,
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .height(200.dp)
-                                                )
-                                            } else {
-                                                Box(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .height(200.dp)
-                                                        .background(Color(0xFFE0E0E0)),
-                                                    contentAlignment = Alignment.Center
-                                                ) {
-                                                    Text(
-                                                        "Aucune image",
-                                                        color = Color(0xFF999999),
-                                                        style = MaterialTheme.typography.bodySmall
-                                                    )
-                                                }
-                                            }
-
-                                            Box(
-                                                modifier = Modifier
-                                                    .align(Alignment.TopEnd)
-                                                    .padding(10.dp)
-                                                    .background(
-                                                        Color(0xCC000000),
-                                                        RoundedCornerShape(50)
-                                                    )
-                                                    .padding(horizontal = 10.dp, vertical = 5.dp)
-                                            ) {
-                                                Text(
-                                                    "${voiture.prixParJour}$/j",
-                                                    color = Color.White,
-                                                    fontWeight = FontWeight.Bold,
-                                                    fontSize = 13.sp
-                                                )
-                                            }
-
-                                            if (!voiture.estDisponible) {
-                                                Box(
-                                                    modifier = Modifier
-                                                        .align(Alignment.TopStart)
-                                                        .padding(10.dp)
-                                                        .background(
-                                                            Color(0xFFFFEBEE),
-                                                            RoundedCornerShape(50)
-                                                        )
-                                                        .padding(horizontal = 10.dp, vertical = 5.dp)
-                                                ) {
-                                                    Text(
-                                                        "Hors service",
-                                                        color = Color(0xFFC62828),
-                                                        fontWeight = FontWeight.SemiBold,
-                                                        fontSize = 12.sp
-                                                    )
-                                                }
-                                            }
-                                        }
-
-                                        Column(
-                                            modifier = Modifier.padding(
-                                                horizontal = 14.dp,
-                                                vertical = 12.dp
-                                            )
-                                        ) {
-                                            Text(
-                                                "${voiture.marque} ${voiture.modele}",
-                                                style = MaterialTheme.typography.titleMedium,
-                                                fontWeight = FontWeight.Bold,
-                                                color = Color(0xFF1A1A1A)
-                                            )
-
-                                            Spacer(modifier = Modifier.height(4.dp))
-
-                                            Text(
-                                                voiture.annee.toString(),
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = Color(0xFF888888)
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                ClientScreen(
+                    voitures = voituresState,
+                    selectedVoiture = selectedVoiture,
+                    recherche = recherche,
+                    marqueFiltre = marqueFiltre,
+                    modeleFiltre = modeleFiltre,
+                    prixMinFiltre = prixMinFiltre,
+                    prixMaxFiltre = prixMaxFiltre,
+                    anneeFiltre = anneeFiltre,
+                    seulementDisponibles = showOnlyDisponible,
+                    showFilterDialog = showFilterDialog,
+                    onBack = ::finish,
+                    onReservationsClicked = ::ouvrirMesReservations,
+                    onSearchChanged = ::modifierRecherche,
+                    onOpenFilters = ::ouvrirFiltres,
+                    onResetFilters = ::reinitialiserFiltres,
+                    onApplyFilters = ::appliquerFiltres,
+                    onDismissFilters = ::fermerFiltres,
+                    onVoitureClicked = ::ouvrirDetailVoiture,
+                    onDetailBack = ::fermerDetailVoiture,
+                    onReserveClicked = ::ouvrirReservation
+                )
             }
         }
+    }
+
+    private fun chargerVoitures() {
+        presenter.chargerVoitures(
+            recherche = recherche,
+            marqueFiltre = marqueFiltre,
+            modeleFiltre = modeleFiltre,
+            prixMinFiltre = prixMinFiltre,
+            prixMaxFiltre = prixMaxFiltre,
+            anneeFiltre = anneeFiltre,
+            seulementDisponibles = showOnlyDisponible
+        )
+    }
+
+    private fun modifierRecherche(value: String) {
+        recherche = value
+        presenter.enregistrerDerniereRecherche(value)
+        chargerVoitures()
+    }
+
+    private fun ouvrirFiltres() {
+        showFilterDialog = true
+    }
+
+    private fun fermerFiltres() {
+        showFilterDialog = false
+    }
+
+    private fun appliquerFiltres(
+        marque: String,
+        modele: String,
+        prixMin: String,
+        prixMax: String,
+        annee: String,
+        disponibles: Boolean
+    ) {
+        marqueFiltre = marque
+        modeleFiltre = modele
+        prixMinFiltre = prixMin
+        prixMaxFiltre = prixMax
+        anneeFiltre = annee
+        showOnlyDisponible = disponibles
+        showFilterDialog = false
+        chargerVoitures()
+    }
+
+    private fun reinitialiserFiltres() {
+        marqueFiltre = ""
+        modeleFiltre = ""
+        prixMinFiltre = ""
+        prixMaxFiltre = ""
+        anneeFiltre = ""
+        showOnlyDisponible = false
+        chargerVoitures()
+    }
+
+    private fun ouvrirDetailVoiture(voitureId: Long) {
+        selectedVoitureId = voitureId
+    }
+
+    private fun fermerDetailVoiture() {
+        selectedVoitureId = 0L
+        chargerVoitures()
+    }
+
+    private fun ouvrirMesReservations() {
+        startActivity(Intent(this, MesReservationsActivity::class.java))
+    }
+
+    private fun ouvrirReservation(voiture: Voiture) {
+        val intent = Intent(this, ReservationActivity::class.java)
+        intent.putExtra("voiture", voiture)
+        startActivity(intent)
     }
 
     override fun afficherVoitures(voitures: List<Voiture>) {
         voituresState = voitures
     }
+}
+
+@Composable
+private fun ClientScreen(
+    voitures: List<Voiture>,
+    selectedVoiture: Voiture?,
+    recherche: String,
+    marqueFiltre: String,
+    modeleFiltre: String,
+    prixMinFiltre: String,
+    prixMaxFiltre: String,
+    anneeFiltre: String,
+    seulementDisponibles: Boolean,
+    showFilterDialog: Boolean,
+    onBack: () -> Unit,
+    onReservationsClicked: () -> Unit,
+    onSearchChanged: (String) -> Unit,
+    onOpenFilters: () -> Unit,
+    onResetFilters: () -> Unit,
+    onApplyFilters: (String, String, String, String, String, Boolean) -> Unit,
+    onDismissFilters: () -> Unit,
+    onVoitureClicked: (Long) -> Unit,
+    onDetailBack: () -> Unit,
+    onReserveClicked: (Voiture) -> Unit
+) {
+    if (selectedVoiture != null) {
+        VoitureDetailScreen(
+            voiture = selectedVoiture,
+            onBack = onDetailBack,
+            onReserve = onReserveClicked
+        )
+    } else {
+        ClientListScreen(
+            voitures = voitures,
+            recherche = recherche,
+            marqueFiltre = marqueFiltre,
+            modeleFiltre = modeleFiltre,
+            prixMinFiltre = prixMinFiltre,
+            prixMaxFiltre = prixMaxFiltre,
+            anneeFiltre = anneeFiltre,
+            seulementDisponibles = seulementDisponibles,
+            showFilterDialog = showFilterDialog,
+            onBack = onBack,
+            onReservationsClicked = onReservationsClicked,
+            onSearchChanged = onSearchChanged,
+            onOpenFilters = onOpenFilters,
+            onResetFilters = onResetFilters,
+            onApplyFilters = onApplyFilters,
+            onDismissFilters = onDismissFilters,
+            onVoitureClicked = onVoitureClicked
+        )
+    }
+}
+
+@Composable
+private fun ClientListScreen(
+    voitures: List<Voiture>,
+    recherche: String,
+    marqueFiltre: String,
+    modeleFiltre: String,
+    prixMinFiltre: String,
+    prixMaxFiltre: String,
+    anneeFiltre: String,
+    seulementDisponibles: Boolean,
+    showFilterDialog: Boolean,
+    onBack: () -> Unit,
+    onReservationsClicked: () -> Unit,
+    onSearchChanged: (String) -> Unit,
+    onOpenFilters: () -> Unit,
+    onResetFilters: () -> Unit,
+    onApplyFilters: (String, String, String, String, String, Boolean) -> Unit,
+    onDismissFilters: () -> Unit,
+    onVoitureClicked: (Long) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF7F7F7))
+    ) {
+        ClientHeader(
+            onBack = onBack,
+            onReservationsClicked = onReservationsClicked
+        )
+
+        OutlinedTextField(
+            value = recherche,
+            onValueChange = onSearchChanged,
+            placeholder = { Text("Rechercher une voiture", color = Color(0xFFAAAAAA)) },
+            shape = RoundedCornerShape(50),
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedContainerColor = Color(0xFFF0F0F0),
+                focusedContainerColor = Color(0xFFF0F0F0),
+                unfocusedBorderColor = Color.Transparent,
+                focusedBorderColor = MaterialTheme.colorScheme.primary
+            ),
+            singleLine = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        )
+
+        ClientFilterBar(
+            hasFilters = hasActiveFilters(
+                marqueFiltre,
+                modeleFiltre,
+                prixMinFiltre,
+                prixMaxFiltre,
+                anneeFiltre,
+                seulementDisponibles
+            ),
+            onOpenFilters = onOpenFilters,
+            onResetFilters = onResetFilters
+        )
+
+        Text(
+            text = construireResumeFiltres(
+                marqueFiltre = marqueFiltre,
+                modeleFiltre = modeleFiltre,
+                prixMinFiltre = prixMinFiltre,
+                prixMaxFiltre = prixMaxFiltre,
+                anneeFiltre = anneeFiltre,
+                seulementDisponibles = seulementDisponibles
+            ),
+            style = MaterialTheme.typography.bodySmall,
+            color = Color(0xFF666666),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+        )
+
+        if (showFilterDialog) {
+            FilterDialog(
+                marqueSelectionnee = marqueFiltre,
+                modeleSelectionne = modeleFiltre,
+                prixMinSelectionne = prixMinFiltre,
+                prixMaxSelectionne = prixMaxFiltre,
+                anneeSelectionnee = anneeFiltre,
+                seulementDisponibles = seulementDisponibles,
+                onDismiss = onDismissFilters,
+                onApply = onApplyFilters
+            )
+        }
+
+        LazyColumn(
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            items(voitures) { voiture ->
+                ClientVoitureCard(voiture = voiture, onClick = { onVoitureClicked(voiture.id) })
+            }
+        }
+    }
+}
+
+@Composable
+private fun ClientHeader(
+    onBack: () -> Unit,
+    onReservationsClicked: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        TextButton(onClick = onBack) {
+            Text(
+                "Menu",
+                color = Color(0xFF1A1A1A),
+                fontWeight = FontWeight.Medium,
+                fontSize = 14.sp
+            )
+        }
+
+        Text(
+            "AutoDrive",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF1A1A1A)
+        )
+
+        TextButton(onClick = onReservationsClicked) {
+            Text(
+                "Reservations",
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 14.sp
+            )
+        }
+    }
+
+    Divider(color = Color(0xFFEEEEEE))
+}
+
+@Composable
+private fun ClientFilterBar(
+    hasFilters: Boolean,
+    onOpenFilters: () -> Unit,
+    onResetFilters: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Button(
+            onClick = onOpenFilters,
+            shape = RoundedCornerShape(50),
+            modifier = Modifier.height(44.dp)
+        ) {
+            Text("Filtrer", fontWeight = FontWeight.SemiBold)
+        }
+
+        if (hasFilters) {
+            TextButton(onClick = onResetFilters) {
+                Text("Reinitialiser")
+            }
+        }
+    }
+}
+
+@Composable
+private fun ClientVoitureCard(
+    voiture: Voiture,
+    onClick: () -> Unit
+) {
+    val firstImage = voiture.imageUrls
+        ?.split(",")
+        ?.firstOrNull()
+        ?.trim()
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        onClick = onClick
+    ) {
+        Column {
+            Box(modifier = Modifier.fillMaxWidth()) {
+                if (!firstImage.isNullOrEmpty()) {
+                    AsyncImage(
+                        model = firstImage,
+                        contentDescription = "Image voiture",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .background(Color(0xFFE0E0E0)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "Aucune image",
+                            color = Color(0xFF999999),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(10.dp)
+                        .background(Color(0xCC000000), RoundedCornerShape(50))
+                        .padding(horizontal = 10.dp, vertical = 5.dp)
+                ) {
+                    Text(
+                        "${voiture.prixParJour}$/j",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp
+                    )
+                }
+
+                if (!voiture.estDisponible) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(10.dp)
+                            .background(Color(0xFFFFEBEE), RoundedCornerShape(50))
+                            .padding(horizontal = 10.dp, vertical = 5.dp)
+                    ) {
+                        Text(
+                            "Hors service",
+                            color = Color(0xFFC62828),
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+            }
+
+            Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
+                Text(
+                    "${voiture.marque} ${voiture.modele}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1A1A1A)
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    voiture.annee.toString(),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFF888888)
+                )
+            }
+        }
+    }
+}
+
+private fun hasActiveFilters(
+    marqueFiltre: String,
+    modeleFiltre: String,
+    prixMinFiltre: String,
+    prixMaxFiltre: String,
+    anneeFiltre: String,
+    seulementDisponibles: Boolean
+): Boolean {
+    return marqueFiltre.isNotBlank() ||
+        modeleFiltre.isNotBlank() ||
+        prixMinFiltre.isNotBlank() ||
+        prixMaxFiltre.isNotBlank() ||
+        anneeFiltre.isNotBlank() ||
+        seulementDisponibles
 }
 
 private fun construireResumeFiltres(
