@@ -13,6 +13,7 @@ import com.example.autodrive.model.entity.Reservation
 import com.example.autodrive.model.entity.Utilisateur
 import com.example.autodrive.model.entity.Voiture
 
+//IA CODEX
 @Database(
     entities = [Voiture::class, Utilisateur::class, Reservation::class],
     version = 3

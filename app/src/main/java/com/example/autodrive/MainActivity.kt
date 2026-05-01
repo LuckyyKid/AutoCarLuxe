@@ -23,59 +23,73 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             AutoDriveTheme {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color(0xFFF7F7F7))
-                        .padding(32.dp),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-
-                    Text(
-                        "AutoDrive",
-                        style = MaterialTheme.typography.displaySmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-
-                    Spacer(modifier = Modifier.height(6.dp))
-
-                    Text(
-                        "Location de voitures",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFF888888)
-                    )
-
-                    Spacer(modifier = Modifier.height(48.dp))
-
-                    Button(
-                        onClick = {
-                            startActivity(Intent(this@MainActivity, ClientActivity::class.java))
-                        },
-                        shape = RoundedCornerShape(50),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp)
-                    ) {
-                        Text("Espace Client", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    OutlinedButton(
-                        onClick = {
-                            startActivity(Intent(this@MainActivity, AdminActivity::class.java))
-                        },
-                        shape = RoundedCornerShape(50),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp)
-                    ) {
-                        Text("Espace Admin", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                    }
-                }
+                MainScreen(
+                    onClientClicked = ::ouvrirEspaceClient,
+                    onAdminClicked = ::ouvrirEspaceAdmin
+                )
             }
+        }
+    }
+
+    private fun ouvrirEspaceClient() {
+        startActivity(Intent(this, ClientActivity::class.java))
+    }
+
+    private fun ouvrirEspaceAdmin() {
+        startActivity(Intent(this, AdminActivity::class.java))
+    }
+}
+
+@androidx.compose.runtime.Composable
+private fun MainScreen(
+    onClientClicked: () -> Unit,
+    onAdminClicked: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF7F7F7))
+            .padding(32.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            "AutoDrive",
+            style = MaterialTheme.typography.displaySmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Text(
+            "Location de voitures",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color(0xFF888888)
+        )
+
+        Spacer(modifier = Modifier.height(48.dp))
+
+        Button(
+            onClick = onClientClicked,
+            shape = RoundedCornerShape(50),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+        ) {
+            Text("Espace Client", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        OutlinedButton(
+            onClick = onAdminClicked,
+            shape = RoundedCornerShape(50),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+        ) {
+            Text("Espace Admin", fontWeight = FontWeight.Bold, fontSize = 15.sp)
         }
     }
 }
