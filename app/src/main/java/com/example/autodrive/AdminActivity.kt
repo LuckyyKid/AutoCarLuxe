@@ -41,213 +41,194 @@ class AdminActivity : ComponentActivity(), VoitureContract.View {
         setContent {
             AutoDriveTheme {
 
-            var showAddScreen by rememberSaveable { mutableStateOf(false) }
-            var voitureToEditId by rememberSaveable { mutableStateOf(0L) }
-            val voitureToEdit = if (voitureToEditId == 0L) {
-                null
-            } else {
-                voituresState.firstOrNull { it.id == voitureToEditId }
-            }
+                var showAddScreen    by rememberSaveable { mutableStateOf(false) }
+                var voitureToEditId  by rememberSaveable { mutableStateOf(0L) }
 
-            LaunchedEffect(Unit) {
-                presenter.chargerVoitures()
-            }
+                // ── Nouveaux états pour la confirmation ──────
+                var showConfirmDialog  by rememberSaveable { mutableStateOf(false) }
+                var voitureASupprimer  by rememberSaveable { mutableStateOf(0L) }
+                // ─────────────────────────────────────────────
 
-            if (showAddScreen) {
+                val voitureToEdit = if (voitureToEditId == 0L) null
+                else voituresState.firstOrNull { it.id == voitureToEditId }
 
-                AddVoitureScreen(
-                    voiture = voitureToEdit,
-                    onCancel = {
-                        voitureToEditId = 0L
-                        showAddScreen = false
-                    },
-                    onSave = { voiture ->
-                        if (voitureToEdit == null) {
-                            presenter.ajouterVoiture(voiture)
-                        } else {
-                            presenter.modifierVoiture(voiture)
-                        }
-                        voitureToEditId = 0L
-                        showAddScreen = false
-                    }
-                )
+                LaunchedEffect(Unit) {
+                    presenter.chargerVoitures()
+                }
 
-            } else {
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color(0xFFF7F7F7))
-                ) {
-
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color.White)
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        TextButton(onClick = { finish() }) {
-                            Text(
-                                "← Menu",
-                                color = Color(0xFF1A1A1A),
-                                fontWeight = FontWeight.Medium,
-                                fontSize = 14.sp
-                            )
-                        }
-
-                        Text(
-                            "Admin",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1A1A1A)
-                        )
-
-                        Spacer(modifier = Modifier.width(64.dp))
-                    }
-
-                    Divider(color = Color(0xFFEEEEEE))
-
-
-                    Button(
-                        onClick = {
-                            voitureToEditId = 0L
-                            showAddScreen = true
+                // ── Dialogue de confirmation suppression ─────
+                if (showConfirmDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showConfirmDialog = false },
+                        title = { Text("Confirmer la suppression") },
+                        text  = {
+                            Text("Voulez-vous vraiment supprimer cette voiture ? Cette action est irréversible.")
                         },
-                        shape = RoundedCornerShape(50),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp)
-                            .height(50.dp)
-                    ) {
-                        Text(
-                            "+ Ajouter une voiture",
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 15.sp
-                        )
-                    }
-
-
-                    LazyColumn(
-                        contentPadding = PaddingValues(
-                            start = 16.dp,
-                            end = 16.dp,
-                            bottom = 24.dp
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        items(voituresState) { voiture ->
-
-                            val images = voiture.imageUrls
-                                ?.split(",")
-                                ?.map { it.trim() }
-                                ?.filter { it.isNotEmpty() }
-                                ?: emptyList()
-
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(16.dp),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.White)
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    presenter.supprimerVoiture(voitureASupprimer)
+                                    showConfirmDialog = false
+                                }
                             ) {
-                                Column {
+                                Text("Supprimer", color = Color(0xFFC62828), fontWeight = FontWeight.Bold)
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showConfirmDialog = false }) {
+                                Text("Annuler")
+                            }
+                        }
+                    )
+                }
+                // ─────────────────────────────────────────────
 
+                if (showAddScreen) {
+                    AddVoitureScreen(
+                        voiture = voitureToEdit,
+                        onCancel = {
+                            voitureToEditId = 0L
+                            showAddScreen = false
+                        },
+                        onSave = { voiture ->
+                            if (voitureToEdit == null) {
+                                presenter.ajouterVoiture(voiture)
+                            } else {
+                                presenter.modifierVoiture(voiture)
+                            }
+                            voitureToEditId = 0L
+                            showAddScreen = false
+                        }
+                    )
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color(0xFFF7F7F7))
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color.White)
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            TextButton(onClick = { finish() }) {
+                                Text("← Menu", color = Color(0xFF1A1A1A), fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                            }
+                            Text("Admin", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color(0xFF1A1A1A))
+                            Spacer(modifier = Modifier.width(64.dp))
+                        }
 
-                                    if (images.isNotEmpty()) {
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .horizontalScroll(rememberScrollState())
-                                        ) {
-                                            images.forEach { url ->
-                                                AsyncImage(
-                                                    model = url,
-                                                    contentDescription = "Image voiture",
-                                                    contentScale = ContentScale.Crop,
-                                                    modifier = Modifier
-                                                        .width(320.dp)
-                                                        .height(180.dp)
-                                                )
+                        Divider(color = Color(0xFFEEEEEE))
+
+                        Button(
+                            onClick = {
+                                voitureToEditId = 0L
+                                showAddScreen = true
+                            },
+                            shape = RoundedCornerShape(50),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 12.dp)
+                                .height(50.dp)
+                        ) {
+                            Text("+ Ajouter une voiture", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                        }
+
+                        LazyColumn(
+                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            items(voituresState) { voiture ->
+
+                                val images = voiture.imageUrls
+                                    ?.split(",")
+                                    ?.map { it.trim() }
+                                    ?.filter { it.isNotEmpty() }
+                                    ?: emptyList()
+
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(16.dp),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                                ) {
+                                    Column {
+                                        if (images.isNotEmpty()) {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .horizontalScroll(rememberScrollState())
+                                            ) {
+                                                images.forEach { url ->
+                                                    AsyncImage(
+                                                        model = url,
+                                                        contentDescription = "Image voiture",
+                                                        contentScale = ContentScale.Crop,
+                                                        modifier = Modifier.width(320.dp).height(180.dp)
+                                                    )
+                                                }
+                                            }
+                                        } else {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(140.dp)
+                                                    .background(Color(0xFFE0E0E0)),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Text("Aucune image", color = Color(0xFF999999), style = MaterialTheme.typography.bodySmall)
                                             }
                                         }
-                                    } else {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(140.dp)
-                                                .background(Color(0xFFE0E0E0)),
-                                            contentAlignment = Alignment.Center
-                                        ) {
+
+                                        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
                                             Text(
-                                                "Aucune image",
-                                                color = Color(0xFF999999),
-                                                style = MaterialTheme.typography.bodySmall
+                                                "${voiture.marque} ${voiture.modele}",
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFF1A1A1A)
                                             )
-                                        }
-                                    }
-
-
-                                    Column(
-                                        modifier = Modifier.padding(
-                                            horizontal = 14.dp,
-                                            vertical = 12.dp
-                                        )
-                                    ) {
-                                        Text(
-                                            "${voiture.marque} ${voiture.modele}",
-                                            style = MaterialTheme.typography.titleMedium,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF1A1A1A)
-                                        )
-
-                                        Spacer(modifier = Modifier.height(4.dp))
-
-                                        Text(
-                                            "${voiture.annee} · ${voiture.prixParJour}$/jour · ${if (voiture.estDisponible) "Disponible" else "Indisponible"}",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = Color(0xFF888888)
-                                        )
-
-                                        if (!voiture.description.isNullOrBlank()) {
                                             Spacer(modifier = Modifier.height(4.dp))
                                             Text(
-                                                voiture.description,
+                                                "${voiture.annee} · ${voiture.prixParJour}$/jour · ${if (voiture.estDisponible) "Disponible" else "Indisponible"}",
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = Color(0xFF888888)
                                             )
-                                        }
-
-                                        Spacer(modifier = Modifier.height(12.dp))
-
-
-                                        Row(
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                            OutlinedButton(
-                                                onClick = {
-                                                    voitureToEditId = voiture.id
-                                                    showAddScreen = true
-                                                },
-                                                shape = RoundedCornerShape(50),
-                                                modifier = Modifier.weight(1f)
-                                            ) {
-                                                Text("Modifier", fontWeight = FontWeight.Medium)
+                                            if (!voiture.description.isNullOrBlank()) {
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Text(voiture.description, style = MaterialTheme.typography.bodySmall, color = Color(0xFF888888))
                                             }
+                                            Spacer(modifier = Modifier.height(12.dp))
 
-                                            Button(
-                                                onClick = {
-                                                    presenter.supprimerVoiture(voiture.id)
-                                                },
-                                                shape = RoundedCornerShape(50),
-                                                colors = ButtonDefaults.buttonColors(
-                                                    containerColor = Color(0xFFFFEBEE),
-                                                    contentColor = Color(0xFFC62828)
-                                                ),
-                                                modifier = Modifier.weight(1f)
-                                            ) {
-                                                Text("Supprimer", fontWeight = FontWeight.Medium)
+                                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                OutlinedButton(
+                                                    onClick = {
+                                                        voitureToEditId = voiture.id
+                                                        showAddScreen = true
+                                                    },
+                                                    shape = RoundedCornerShape(50),
+                                                    modifier = Modifier.weight(1f)
+                                                ) {
+                                                    Text("Modifier", fontWeight = FontWeight.Medium)
+                                                }
+
+                                                Button(
+                                                    // ── MODIFIÉ : ouvre le dialogue au lieu de supprimer directement ──
+                                                    onClick = {
+                                                        voitureASupprimer = voiture.id
+                                                        showConfirmDialog = true
+                                                    },
+                                                    shape = RoundedCornerShape(50),
+                                                    colors = ButtonDefaults.buttonColors(
+                                                        containerColor = Color(0xFFFFEBEE),
+                                                        contentColor = Color(0xFFC62828)
+                                                    ),
+                                                    modifier = Modifier.weight(1f)
+                                                ) {
+                                                    Text("Supprimer", fontWeight = FontWeight.Medium)
+                                                }
                                             }
                                         }
                                     }
@@ -256,7 +237,6 @@ class AdminActivity : ComponentActivity(), VoitureContract.View {
                         }
                     }
                 }
-            }
             }
         }
     }
