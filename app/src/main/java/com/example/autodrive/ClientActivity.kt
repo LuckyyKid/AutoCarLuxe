@@ -42,7 +42,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.example.autodrive.model.AppDatabase
+import com.example.autodrive.model.entity.EvaluationWithUser
 import com.example.autodrive.model.entity.Voiture
+import com.example.autodrive.model.repository.EvaluationRepository
 import com.example.autodrive.model.repository.VoitureRepository
 import com.example.autodrive.model.session.UserSession
 import com.example.autodrive.presenter.ClientPresenter
@@ -52,6 +55,8 @@ import com.example.autodrive.ui.theme.AutoDriveTheme
 class ClientActivity : ComponentActivity(), ClientContract.View {
 
     private lateinit var presenter: ClientPresenter
+    private lateinit var evaluationRepository: EvaluationRepository
+    private lateinit var userSession: UserSession
     private var voituresState by mutableStateOf<List<Voiture>>(emptyList())
     private var selectedVoitureId by mutableStateOf(0L)
     private var recherche by mutableStateOf("")
@@ -62,6 +67,11 @@ class ClientActivity : ComponentActivity(), ClientContract.View {
     private var anneeFiltre by mutableStateOf("")
     private var showOnlyDisponible by mutableStateOf(false)
     private var showFilterDialog by mutableStateOf(false)
+    
+    private var evaluationsState by mutableStateOf<List<EvaluationWithUser>>(emptyList())
+    private var noteMoyenneState by mutableStateOf(0f)
+    private var nombreEvaluationsState by mutableStateOf(0)
+    private var userHasEvaluatedState by mutableStateOf(false)
 
     private val selectedVoiture: Voiture?
         get() = voituresState.firstOrNull { it.id == selectedVoitureId }
@@ -69,10 +79,14 @@ class ClientActivity : ComponentActivity(), ClientContract.View {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val db = AppDatabase.getDatabase(applicationContext)
+        evaluationRepository = EvaluationRepository(db.evaluationDao())
+        userSession = UserSession(applicationContext)
+        
         presenter = ClientPresenter(
             this,
             VoitureRepository(applicationContext),
-            UserSession(applicationContext)
+            userSession
         )
         recherche = presenter.chargerDerniereRecherche()
         chargerVoitures()
@@ -82,6 +96,11 @@ class ClientActivity : ComponentActivity(), ClientContract.View {
                 ClientScreen(
                     voitures = voituresState,
                     selectedVoiture = selectedVoiture,
+                    evaluations = evaluationsState,
+                    noteMoyenne = noteMoyenneState,
+                    nombreEvaluations = nombreEvaluationsState,
+                    userHasEvaluated = userHasEvaluatedState,
+                    currentUserId = userSession.getCurrentUserId(),
                     recherche = recherche,
                     marqueFiltre = marqueFiltre,
                     modeleFiltre = modeleFiltre,
@@ -92,6 +111,7 @@ class ClientActivity : ComponentActivity(), ClientContract.View {
                     showFilterDialog = showFilterDialog,
                     onBack = ::finish,
                     onReservationsClicked = ::ouvrirMesReservations,
+                    onProfilClicked = ::ouvrirProfil,
                     onSearchChanged = ::modifierRecherche,
                     onOpenFilters = ::ouvrirFiltres,
                     onResetFilters = ::reinitialiserFiltres,
@@ -99,10 +119,27 @@ class ClientActivity : ComponentActivity(), ClientContract.View {
                     onDismissFilters = ::fermerFiltres,
                     onVoitureClicked = ::ouvrirDetailVoiture,
                     onDetailBack = ::fermerDetailVoiture,
-                    onReserveClicked = ::ouvrirReservation
+                    onReserveClicked = ::ouvrirReservation,
+                    onAddEvaluationClicked = ::ouvrirAjoutEvaluation
                 )
             }
         }
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        if (selectedVoitureId > 0) {
+            chargerEvaluations(selectedVoitureId)
+        }
+    }
+
+    private fun chargerEvaluations(voitureId: Long) {
+        evaluationsState = evaluationRepository.getEvaluationsParVoiture(voitureId)
+        noteMoyenneState = evaluationRepository.getNoteMoyenne(voitureId)
+        nombreEvaluationsState = evaluationRepository.getNombreEvaluations(voitureId)
+        
+        val userId = userSession.getCurrentUserId()
+        userHasEvaluatedState = evaluationRepository.getEvaluationUtilisateur(userId, voitureId) != null
     }
 
     private fun chargerVoitures() {
@@ -161,6 +198,7 @@ class ClientActivity : ComponentActivity(), ClientContract.View {
 
     private fun ouvrirDetailVoiture(voitureId: Long) {
         selectedVoitureId = voitureId
+        chargerEvaluations(voitureId)
     }
 
     private fun fermerDetailVoiture() {
@@ -171,11 +209,23 @@ class ClientActivity : ComponentActivity(), ClientContract.View {
     private fun ouvrirMesReservations() {
         startActivity(Intent(this, MesReservationsActivity::class.java))
     }
+    
+    private fun ouvrirProfil() {
+        startActivity(Intent(this, ProfilActivity::class.java))
+    }
 
     private fun ouvrirReservation(voiture: Voiture) {
         val intent = Intent(this, ReservationActivity::class.java)
         intent.putExtra("voiture", voiture)
         startActivity(intent)
+    }
+    
+    private fun ouvrirAjoutEvaluation() {
+        selectedVoiture?.let { voiture ->
+            val intent = Intent(this, AddEvaluationActivity::class.java)
+            intent.putExtra("voiture", voiture)
+            startActivity(intent)
+        }
     }
 
     override fun afficherVoitures(voitures: List<Voiture>) {
@@ -187,6 +237,11 @@ class ClientActivity : ComponentActivity(), ClientContract.View {
 private fun ClientScreen(
     voitures: List<Voiture>,
     selectedVoiture: Voiture?,
+    evaluations: List<EvaluationWithUser>,
+    noteMoyenne: Float,
+    nombreEvaluations: Int,
+    userHasEvaluated: Boolean,
+    currentUserId: Long,
     recherche: String,
     marqueFiltre: String,
     modeleFiltre: String,
@@ -197,6 +252,7 @@ private fun ClientScreen(
     showFilterDialog: Boolean,
     onBack: () -> Unit,
     onReservationsClicked: () -> Unit,
+    onProfilClicked: () -> Unit,
     onSearchChanged: (String) -> Unit,
     onOpenFilters: () -> Unit,
     onResetFilters: () -> Unit,
@@ -204,13 +260,20 @@ private fun ClientScreen(
     onDismissFilters: () -> Unit,
     onVoitureClicked: (Long) -> Unit,
     onDetailBack: () -> Unit,
-    onReserveClicked: (Voiture) -> Unit
+    onReserveClicked: (Voiture) -> Unit,
+    onAddEvaluationClicked: () -> Unit
 ) {
     if (selectedVoiture != null) {
         VoitureDetailScreen(
             voiture = selectedVoiture,
+            evaluations = evaluations,
+            noteMoyenne = noteMoyenne,
+            nombreEvaluations = nombreEvaluations,
+            currentUserId = currentUserId,
+            userHasEvaluated = userHasEvaluated,
             onBack = onDetailBack,
-            onReserve = onReserveClicked
+            onReserve = onReserveClicked,
+            onAddEvaluation = onAddEvaluationClicked
         )
     } else {
         ClientListScreen(
@@ -225,6 +288,7 @@ private fun ClientScreen(
             showFilterDialog = showFilterDialog,
             onBack = onBack,
             onReservationsClicked = onReservationsClicked,
+            onProfilClicked = onProfilClicked,
             onSearchChanged = onSearchChanged,
             onOpenFilters = onOpenFilters,
             onResetFilters = onResetFilters,
@@ -248,6 +312,7 @@ private fun ClientListScreen(
     showFilterDialog: Boolean,
     onBack: () -> Unit,
     onReservationsClicked: () -> Unit,
+    onProfilClicked: () -> Unit,
     onSearchChanged: (String) -> Unit,
     onOpenFilters: () -> Unit,
     onResetFilters: () -> Unit,
@@ -262,7 +327,8 @@ private fun ClientListScreen(
     ) {
         ClientHeader(
             onBack = onBack,
-            onReservationsClicked = onReservationsClicked
+            onReservationsClicked = onReservationsClicked,
+            onProfilClicked = onProfilClicked
         )
 
         OutlinedTextField(
@@ -336,7 +402,8 @@ private fun ClientListScreen(
 @Composable
 private fun ClientHeader(
     onBack: () -> Unit,
-    onReservationsClicked: () -> Unit
+    onReservationsClicked: () -> Unit,
+    onProfilClicked: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -362,13 +429,23 @@ private fun ClientHeader(
             color = Color(0xFF1A1A1A)
         )
 
-        TextButton(onClick = onReservationsClicked) {
-            Text(
-                "Reservations",
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 14.sp
-            )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            TextButton(onClick = onProfilClicked) {
+                Text(
+                    "Profil",
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp
+                )
+            }
+            TextButton(onClick = onReservationsClicked) {
+                Text(
+                    "Reservations",
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp
+                )
+            }
         }
     }
 

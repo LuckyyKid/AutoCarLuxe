@@ -45,6 +45,10 @@ class UtilisateurRepository(context: Context) {
     fun getById(id: Long): Utilisateur? {
         return utilisateurDao.getById(id)
     }
+    
+    fun getUtilisateurById(id: Long): Utilisateur? {
+        return utilisateurDao.getById(id)
+    }
 
     fun update(utilisateur: Utilisateur) {
         utilisateurDao.update(utilisateur)
