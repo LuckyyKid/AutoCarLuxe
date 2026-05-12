@@ -1,10 +1,14 @@
 package com.example.autodrive.model.repository
 
+import android.content.Context
+import com.example.autodrive.model.AppDatabase
 import com.example.autodrive.model.dao.EvaluationDao
 import com.example.autodrive.model.entity.Evaluation
 import com.example.autodrive.model.entity.EvaluationWithUser
 
 class EvaluationRepository(private val evaluationDao: EvaluationDao) {
+
+    constructor(context: Context) : this(AppDatabase.getDatabase(context).evaluationDao())
     
     fun ajouterEvaluation(evaluation: Evaluation): Long {
         return evaluationDao.insert(evaluation)

@@ -6,8 +6,6 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -18,13 +16,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.autodrive.model.entity.ReservationWithVoiture
 import com.example.autodrive.model.repository.ReservationRepository
 import com.example.autodrive.model.session.UserSession
 import com.example.autodrive.presenter.MesReservationsPresenter
 import com.example.autodrive.presenter.contract.MesReservationsContract
 import com.example.autodrive.ui.theme.AutoDriveTheme
+import com.example.autodrive.view.ReservationAdapter
 
 class MesReservationsActivity : ComponentActivity(), MesReservationsContract.View {
 
@@ -36,6 +37,7 @@ class MesReservationsActivity : ComponentActivity(), MesReservationsContract.Vie
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val filtreSauvegarde = savedInstanceState?.getString("filtre_statut") ?: "TOUS"
 
         presenter = MesReservationsPresenter(
             this,
@@ -43,6 +45,7 @@ class MesReservationsActivity : ComponentActivity(), MesReservationsContract.Vie
             UserSession(applicationContext)
         )
         presenter.chargerReservations()
+        presenter.changerFiltre(filtreSauvegarde)
 
         setContent {
             AutoDriveTheme {
@@ -52,15 +55,11 @@ class MesReservationsActivity : ComponentActivity(), MesReservationsContract.Vie
                     count = countState,
                     filtreStatut = filtreStatut,
                     onBack = ::finish,
-                    onFiltreChange = ::changerFiltre,
+                    onFiltreChange = presenter::changerFiltre,
                     onAnnulerReservation = ::annulerReservation
                 )
             }
         }
-    }
-
-    private fun changerFiltre(nouveauFiltre: String) {
-        filtreStatut = nouveauFiltre
     }
 
     private fun annulerReservation(reservationId: Long) {
@@ -75,6 +74,15 @@ class MesReservationsActivity : ComponentActivity(), MesReservationsContract.Vie
         totalState = total
         countState = count
     }
+
+    override fun afficherFiltre(statut: String) {
+        filtreStatut = statut
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putString("filtre_statut", filtreStatut)
+    }
 }
 
 @Composable
@@ -87,11 +95,6 @@ private fun MesReservationsScreen(
     onFiltreChange: (String) -> Unit,
     onAnnulerReservation: (Long) -> Unit
 ) {
-    val reservationsFiltrees = when (filtreStatut) {
-        "TOUS" -> reservations
-        else -> reservations.filter { it.statut == filtreStatut }
-    }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -217,7 +220,7 @@ private fun MesReservationsScreen(
             )
         }
 
-        if (reservationsFiltrees.isEmpty()) {
+        if (reservations.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -231,20 +234,29 @@ private fun MesReservationsScreen(
                 )
             }
         } else {
-            LazyColumn(
+            AndroidView(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(bottom = 16.dp)
-            ) {
-                items(reservationsFiltrees) { reservation ->
-                    ReservationCard(
-                        reservation = reservation,
-                        onAnnuler = { onAnnulerReservation(reservation.id) }
-                    )
+                factory = { context ->
+                    RecyclerView(context).apply {
+                        layoutManager = LinearLayoutManager(context)
+                        adapter = ReservationAdapter(onAnnulerReservation).also {
+                            it.submitList(reservations)
+                        }
+                    }
+                },
+                update = { recyclerView ->
+                    val reservationAdapter = recyclerView.adapter as? ReservationAdapter
+                    if (reservationAdapter == null) {
+                        recyclerView.adapter = ReservationAdapter(onAnnulerReservation).also {
+                            it.submitList(reservations)
+                        }
+                    } else {
+                        reservationAdapter.submitList(reservations)
+                    }
                 }
-            }
+            )
         }
     }
 }

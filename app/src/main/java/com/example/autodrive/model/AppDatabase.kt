@@ -32,6 +32,78 @@ abstract class AppDatabase : RoomDatabase() {
 
         private val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("PRAGMA foreign_keys=OFF")
+
+                database.execSQL("ALTER TABLE voiture RENAME TO voiture_ancien")
+                database.execSQL("ALTER TABLE utilisateur RENAME TO utilisateur_ancien")
+                database.execSQL("ALTER TABLE reservation RENAME TO reservation_ancien")
+
+                database.execSQL(
+                    """CREATE TABLE voiture (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        marque TEXT NOT NULL,
+                        modele TEXT NOT NULL,
+                        annee INTEGER NOT NULL,
+                        prixParJour REAL NOT NULL,
+                        estDisponible INTEGER NOT NULL,
+                        imageUrls TEXT,
+                        description TEXT,
+                        ageMinimum INTEGER NOT NULL
+                    )"""
+                )
+
+                database.execSQL(
+                    """CREATE TABLE utilisateur (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        nom TEXT NOT NULL,
+                        prenom TEXT NOT NULL,
+                        email TEXT NOT NULL,
+                        password TEXT NOT NULL
+                    )"""
+                )
+
+                database.execSQL(
+                    """CREATE TABLE reservation (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        utilisateurId INTEGER NOT NULL,
+                        voitureId INTEGER NOT NULL,
+                        dateDebut TEXT NOT NULL,
+                        dateFin TEXT NOT NULL,
+                        coutTotal REAL NOT NULL,
+                        statut TEXT NOT NULL,
+                        FOREIGN KEY(voitureId) REFERENCES voiture(id) ON DELETE CASCADE,
+                        FOREIGN KEY(utilisateurId) REFERENCES utilisateur(id) ON DELETE CASCADE
+                    )"""
+                )
+
+                database.execSQL(
+                    """INSERT INTO voiture (
+                        id, marque, modele, annee, prixParJour, estDisponible,
+                        imageUrls, description, ageMinimum
+                    )
+                    SELECT id, marque, modele, annee, prixParJour, estDisponible,
+                           imageUrl, NULL, 18
+                    FROM voiture_ancien"""
+                )
+
+                database.execSQL(
+                    """INSERT INTO utilisateur (id, nom, prenom, email, password)
+                    SELECT id, nom, prenom, email, motDePasseHash
+                    FROM utilisateur_ancien"""
+                )
+
+                database.execSQL(
+                    """INSERT INTO reservation (
+                        id, utilisateurId, voitureId, dateDebut, dateFin, coutTotal, statut
+                    )
+                    SELECT id, utilisateurId, voitureId, dateDebut, dateFin, coutTotal, statut
+                    FROM reservation_ancien"""
+                )
+
+                database.execSQL("DROP TABLE reservation_ancien")
+                database.execSQL("DROP TABLE utilisateur_ancien")
+                database.execSQL("DROP TABLE voiture_ancien")
+                database.execSQL("PRAGMA foreign_keys=ON")
             }
         }
 

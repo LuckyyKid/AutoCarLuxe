@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -30,8 +31,10 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,6 +57,7 @@ class AdminActivity : ComponentActivity(), VoitureContract.View {
     private var voituresState by mutableStateOf<List<Voiture>>(emptyList())
     private var showAddScreen by mutableStateOf(false)
     private var voitureToEditId by mutableStateOf(0L)
+    private var adminMessageState by mutableStateOf("")
 
     private val voitureToEdit: Voiture?
         get() = voituresState.firstOrNull { it.id == voitureToEditId }
@@ -67,8 +71,6 @@ class AdminActivity : ComponentActivity(), VoitureContract.View {
         setContent {
             AutoDriveTheme {
 
-                var showAddScreen    by rememberSaveable { mutableStateOf(false) }
-                var voitureToEditId  by rememberSaveable { mutableStateOf(0L) }
 
                 // ── Nouveaux états pour la confirmation ──────
                 var showConfirmDialog  by rememberSaveable { mutableStateOf(false) }
@@ -116,14 +118,18 @@ class AdminActivity : ComponentActivity(), VoitureContract.View {
                             voitureToEditId = 0L
                             showAddScreen = false
                         },
-                        onSave = { voiture ->
-                            if (voitureToEdit == null) {
-                                presenter.ajouterVoiture(voiture)
-                            } else {
-                                presenter.modifierVoiture(voiture)
-                            }
-                            voitureToEditId = 0L
-                            showAddScreen = false
+                        onSave = { id, marque, modele, annee, prixParJour, estDisponible, imageUrls, description ->
+                            adminMessageState = ""
+                            presenter.enregistrerVoitureDepuisFormulaire(
+                                id = id,
+                                marque = marque,
+                                modele = modele,
+                                annee = annee,
+                                prixParJour = prixParJour,
+                                estDisponible = estDisponible,
+                                imageUrls = imageUrls,
+                                description = description
+                            )
                         }
                     )
                 } else {
@@ -148,6 +154,22 @@ class AdminActivity : ComponentActivity(), VoitureContract.View {
                         }
 
                         Divider(color = Color(0xFFEEEEEE))
+
+                        if (adminMessageState.isNotEmpty()) {
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE))
+                            ) {
+                                Text(
+                                    adminMessageState,
+                                    modifier = Modifier.padding(14.dp),
+                                    color = Color(0xFFC62828),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        }
 
                         Button(
                             onClick = {
@@ -267,31 +289,13 @@ class AdminActivity : ComponentActivity(), VoitureContract.View {
         }
     }
 
-    private fun ouvrirAjoutVoiture() {
-        voitureToEditId = 0L
-        showAddScreen = true
-    }
-
-    private fun ouvrirModificationVoiture(voitureId: Long) {
-        voitureToEditId = voitureId
-        showAddScreen = true
-    }
-
-    private fun fermerFormulaireVoiture() {
+    override fun afficherVoitures(voitures: List<Voiture>) {
+        voituresState = voitures
         voitureToEditId = 0L
         showAddScreen = false
     }
 
-    private fun enregistrerVoiture(voiture: Voiture) {
-        if (voitureToEdit == null) {
-            presenter.ajouterVoiture(voiture)
-        } else {
-            presenter.modifierVoiture(voiture)
-        }
-        fermerFormulaireVoiture()
-    }
-
-    override fun afficherVoitures(voitures: List<Voiture>) {
-        voituresState = voitures
+    override fun afficherMessage(message: String) {
+        adminMessageState = message
     }
 }

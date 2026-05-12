@@ -5,10 +5,29 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -18,35 +37,45 @@ import androidx.compose.ui.unit.sp
 import com.example.autodrive.model.repository.ReservationRepository
 import com.example.autodrive.model.repository.UtilisateurRepository
 import com.example.autodrive.model.session.UserSession
+import com.example.autodrive.presenter.ProfilPresenter
+import com.example.autodrive.presenter.contract.ProfilContract
+import com.example.autodrive.presenter.contract.ProfilUiState
 import com.example.autodrive.ui.theme.AutoDriveTheme
 
-class ProfilActivity : ComponentActivity() {
+class ProfilActivity : ComponentActivity(), ProfilContract.View {
+
+    private lateinit var presenter: ProfilPresenter
+    private var profilState by mutableStateOf(
+        ProfilUiState(
+            nomComplet = "",
+            email = "",
+            nombreReservations = 0,
+            totalDepense = 0.0,
+            marqueFavorite = "",
+            marquesDisponibles = emptyList()
+        )
+    )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        presenter = ProfilPresenter(
+            this,
+            UtilisateurRepository(applicationContext),
+            ReservationRepository(applicationContext),
+            UserSession(applicationContext)
+        )
+        presenter.chargerProfil()
+
         setContent {
             AutoDriveTheme {
-
-                val session         = UserSession(applicationContext)
-                val userRepo        = UtilisateurRepository(applicationContext)
-                val reservationRepo = ReservationRepository(applicationContext)
-
-                val userId  = session.getCurrentUserId()
-                val user    = userRepo.getById(userId)
-                val count   = reservationRepo.countReservations(userId)
-                val total   = reservationRepo.totalDepense(userId)
-
-                val marques = listOf("", "BMW", "Mercedes", "Audi", "Volkswagen")
-                var marqueFavorite   by remember { mutableStateOf(session.getMarqueFavorite()) }
-                var showMarqueDialog by remember { mutableStateOf(false) }
+                var showMarqueDialog by rememberSaveable { mutableStateOf(false) }
 
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .background(Color(0xFFF7F7F7))
                 ) {
-                    // ── En-tête ──────────────────────────────
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -69,8 +98,6 @@ class ProfilActivity : ComponentActivity() {
                     Divider(color = Color(0xFFEEEEEE))
 
                     Column(modifier = Modifier.padding(16.dp)) {
-
-                        // ── Infos utilisateur ─────────────────
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(16.dp),
@@ -79,14 +106,14 @@ class ProfilActivity : ComponentActivity() {
                         ) {
                             Column(modifier = Modifier.padding(20.dp)) {
                                 Text(
-                                    "${user?.prenom ?: ""} ${user?.nom ?: ""}",
+                                    profilState.nomComplet,
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFF1A1A1A)
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    user?.email ?: "",
+                                    profilState.email,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = Color(0xFF888888)
                                 )
@@ -95,7 +122,6 @@ class ProfilActivity : ComponentActivity() {
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // ── Statistiques ──────────────────────
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(16.dp),
@@ -110,31 +136,30 @@ class ProfilActivity : ComponentActivity() {
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text(
-                                        "$count",
+                                        "${profilState.nombreReservations}",
                                         style = MaterialTheme.typography.titleLarge,
                                         fontWeight = FontWeight.Bold,
                                         color = Color(0xFF1A1A1A)
                                     )
-                                    Text("Réservations", style = MaterialTheme.typography.bodySmall, color = Color(0xFF888888))
+                                    Text("Reservations", style = MaterialTheme.typography.bodySmall, color = Color(0xFF888888))
                                 }
 
                                 Divider(modifier = Modifier.height(36.dp).width(1.dp), color = Color(0xFFEEEEEE))
 
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text(
-                                        "$total $",
+                                        "${profilState.totalDepense} $",
                                         style = MaterialTheme.typography.titleLarge,
                                         fontWeight = FontWeight.Bold,
                                         color = Color(0xFF1A1A1A)
                                     )
-                                    Text("Total dépensé", style = MaterialTheme.typography.bodySmall, color = Color(0xFF888888))
+                                    Text("Total depense", style = MaterialTheme.typography.bodySmall, color = Color(0xFF888888))
                                 }
                             }
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // ── Marque favorite ───────────────────
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(16.dp),
@@ -151,7 +176,7 @@ class ProfilActivity : ComponentActivity() {
                                 Column {
                                     Text("Marque favorite", fontWeight = FontWeight.SemiBold, color = Color(0xFF1A1A1A))
                                     Text(
-                                        if (marqueFavorite.isBlank()) "Aucune" else marqueFavorite,
+                                        if (profilState.marqueFavorite.isBlank()) "Aucune" else profilState.marqueFavorite,
                                         style = MaterialTheme.typography.bodySmall,
                                         color = Color(0xFF888888)
                                     )
@@ -164,33 +189,25 @@ class ProfilActivity : ComponentActivity() {
 
                         Spacer(modifier = Modifier.height(32.dp))
 
-                        // ── Déconnexion ───────────────────────
                         OutlinedButton(
-                            onClick = {
-                                session.logout()
-                                val intent = Intent(this@ProfilActivity, LoginActivity::class.java)
-                                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                                startActivity(intent)
-                            },
+                            onClick = { presenter.deconnecter() },
                             shape = RoundedCornerShape(50),
                             modifier = Modifier.fillMaxWidth().height(56.dp)
                         ) {
-                            Text("Se déconnecter", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color(0xFFC62828))
+                            Text("Se deconnecter", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = Color(0xFFC62828))
                         }
                     }
 
-                    // ── Dialog choix marque ───────────────────
                     if (showMarqueDialog) {
                         AlertDialog(
                             onDismissRequest = { showMarqueDialog = false },
                             title = { Text("Choisir une marque favorite") },
                             text = {
                                 Column {
-                                    marques.forEach { marque ->
+                                    profilState.marquesDisponibles.forEach { marque ->
                                         TextButton(
                                             onClick = {
-                                                marqueFavorite = marque
-                                                session.saveMarqueFavorite(marque)
+                                                presenter.changerMarqueFavorite(marque)
                                                 showMarqueDialog = false
                                             },
                                             modifier = Modifier.fillMaxWidth()
@@ -206,5 +223,15 @@ class ProfilActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun afficherProfil(profil: ProfilUiState) {
+        profilState = profil
+    }
+
+    override fun ouvrirConnexion() {
+        val intent = Intent(this, LoginActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
     }
 }

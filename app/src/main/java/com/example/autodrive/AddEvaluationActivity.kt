@@ -13,34 +13,37 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.autodrive.model.AppDatabase
 import com.example.autodrive.model.entity.Evaluation
 import com.example.autodrive.model.entity.Voiture
 import com.example.autodrive.model.repository.EvaluationRepository
 import com.example.autodrive.model.session.UserSession
+import com.example.autodrive.presenter.EvaluationPresenter
+import com.example.autodrive.presenter.contract.EvaluationContract
+import com.example.autodrive.presenter.contract.EvaluationVoitureUiState
 import com.example.autodrive.ui.theme.AutoDriveTheme
-import java.text.SimpleDateFormat
-import java.util.*
 
-class AddEvaluationActivity : ComponentActivity() {
+class AddEvaluationActivity : ComponentActivity(), EvaluationContract.View {
 
-    private lateinit var evaluationRepository: EvaluationRepository
-    private lateinit var userSession: UserSession
+    private lateinit var presenter: EvaluationPresenter
     private var voiture: Voiture? = null
-    private var existingEvaluation: Evaluation? = null
+    private var existingEvaluationState by mutableStateOf<Evaluation?>(null)
+    private var erreurState by mutableStateOf("")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val db = AppDatabase.getDatabase(applicationContext)
-        evaluationRepository = EvaluationRepository(db.evaluationDao())
-        userSession = UserSession(applicationContext)
+        presenter = EvaluationPresenter(
+            this,
+            EvaluationRepository(applicationContext),
+            UserSession(applicationContext)
+        )
 
         voiture = intent.getSerializableExtra("voiture") as? Voiture
         
@@ -49,14 +52,14 @@ class AddEvaluationActivity : ComponentActivity() {
             return
         }
 
-        val userId = userSession.getCurrentUserId()
-        existingEvaluation = evaluationRepository.getEvaluationUtilisateur(userId, voiture!!.id)
+        presenter.chargerEvaluationAEditer(voiture!!.id)
 
         setContent {
             AutoDriveTheme {
                 AddEvaluationScreen(
                     voiture = voiture!!,
-                    existingEvaluation = existingEvaluation,
+                    existingEvaluation = existingEvaluationState,
+                    erreur = erreurState,
                     onBack = ::finish,
                     onSave = ::saveEvaluation
                 )
@@ -65,28 +68,21 @@ class AddEvaluationActivity : ComponentActivity() {
     }
 
     private fun saveEvaluation(note: Float, commentaire: String) {
-        val userId = userSession.getCurrentUserId()
-        val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-        val dateEvaluation = dateFormat.format(Date())
+        erreurState = ""
+        presenter.enregistrerEvaluation(voiture!!.id, note, commentaire)
+    }
 
-        if (existingEvaluation != null) {
-            val updatedEvaluation = existingEvaluation!!.copy(
-                note = note,
-                commentaire = commentaire.ifBlank { null },
-                dateEvaluation = dateEvaluation
-            )
-            evaluationRepository.modifierEvaluation(updatedEvaluation)
-        } else {
-            val newEvaluation = Evaluation(
-                utilisateurId = userId,
-                voitureId = voiture!!.id,
-                note = note,
-                commentaire = commentaire.ifBlank { null },
-                dateEvaluation = dateEvaluation
-            )
-            evaluationRepository.ajouterEvaluation(newEvaluation)
-        }
-        
+    override fun afficherEvaluations(state: EvaluationVoitureUiState) = Unit
+
+    override fun afficherEvaluationAEditer(evaluation: Evaluation?) {
+        existingEvaluationState = evaluation
+    }
+
+    override fun afficherErreur(message: String) {
+        erreurState = message
+    }
+
+    override fun evaluationEnregistree() {
         finish()
     }
 }
@@ -95,11 +91,12 @@ class AddEvaluationActivity : ComponentActivity() {
 private fun AddEvaluationScreen(
     voiture: Voiture,
     existingEvaluation: Evaluation?,
+    erreur: String,
     onBack: () -> Unit,
     onSave: (Float, String) -> Unit
 ) {
-    var note by remember { mutableFloatStateOf(existingEvaluation?.note ?: 0f) }
-    var commentaire by remember { mutableStateOf(existingEvaluation?.commentaire ?: "") }
+    var note by rememberSaveable(existingEvaluation?.id) { mutableStateOf(existingEvaluation?.note ?: 0f) }
+    var commentaire by rememberSaveable(existingEvaluation?.id) { mutableStateOf(existingEvaluation?.commentaire ?: "") }
 
     Column(
         modifier = Modifier
@@ -218,6 +215,23 @@ private fun AddEvaluationScreen(
             )
 
             Spacer(modifier = Modifier.height(32.dp))
+
+            if (erreur.isNotEmpty()) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE))
+                ) {
+                    Text(
+                        erreur,
+                        modifier = Modifier.padding(14.dp),
+                        color = Color(0xFFC62828),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+            }
 
             Button(
                 onClick = { onSave(note, commentaire) },

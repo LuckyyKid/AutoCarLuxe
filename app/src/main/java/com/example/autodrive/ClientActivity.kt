@@ -42,20 +42,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.example.autodrive.model.AppDatabase
 import com.example.autodrive.model.entity.EvaluationWithUser
 import com.example.autodrive.model.entity.Voiture
 import com.example.autodrive.model.repository.EvaluationRepository
 import com.example.autodrive.model.repository.VoitureRepository
 import com.example.autodrive.model.session.UserSession
 import com.example.autodrive.presenter.ClientPresenter
+import com.example.autodrive.presenter.EvaluationPresenter
 import com.example.autodrive.presenter.contract.ClientContract
+import com.example.autodrive.presenter.contract.EvaluationContract
+import com.example.autodrive.presenter.contract.EvaluationVoitureUiState
 import com.example.autodrive.ui.theme.AutoDriveTheme
 
-class ClientActivity : ComponentActivity(), ClientContract.View {
+class ClientActivity : ComponentActivity(), ClientContract.View, EvaluationContract.View {
 
     private lateinit var presenter: ClientPresenter
-    private lateinit var evaluationRepository: EvaluationRepository
+    private lateinit var evaluationPresenter: EvaluationPresenter
     private lateinit var userSession: UserSession
     private var voituresState by mutableStateOf<List<Voiture>>(emptyList())
     private var selectedVoitureId by mutableStateOf(0L)
@@ -72,6 +74,7 @@ class ClientActivity : ComponentActivity(), ClientContract.View {
     private var noteMoyenneState by mutableStateOf(0f)
     private var nombreEvaluationsState by mutableStateOf(0)
     private var userHasEvaluatedState by mutableStateOf(false)
+    private var currentUserIdState by mutableStateOf(0L)
 
     private val selectedVoiture: Voiture?
         get() = voituresState.firstOrNull { it.id == selectedVoitureId }
@@ -79,17 +82,32 @@ class ClientActivity : ComponentActivity(), ClientContract.View {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val db = AppDatabase.getDatabase(applicationContext)
-        evaluationRepository = EvaluationRepository(db.evaluationDao())
+        selectedVoitureId = savedInstanceState?.getLong("selected_voiture_id") ?: 0L
+        marqueFiltre = savedInstanceState?.getString("marque_filtre") ?: ""
+        modeleFiltre = savedInstanceState?.getString("modele_filtre") ?: ""
+        prixMinFiltre = savedInstanceState?.getString("prix_min_filtre") ?: ""
+        prixMaxFiltre = savedInstanceState?.getString("prix_max_filtre") ?: ""
+        anneeFiltre = savedInstanceState?.getString("annee_filtre") ?: ""
+        showOnlyDisponible = savedInstanceState?.getBoolean("show_only_disponible") ?: false
+        showFilterDialog = savedInstanceState?.getBoolean("show_filter_dialog") ?: false
+
         userSession = UserSession(applicationContext)
+        evaluationPresenter = EvaluationPresenter(
+            this,
+            EvaluationRepository(applicationContext),
+            userSession
+        )
         
         presenter = ClientPresenter(
             this,
             VoitureRepository(applicationContext),
             userSession
         )
-        recherche = presenter.chargerDerniereRecherche()
+        recherche = savedInstanceState?.getString("recherche") ?: presenter.chargerDerniereRecherche()
         chargerVoitures()
+        if (selectedVoitureId > 0L) {
+            chargerEvaluations(selectedVoitureId)
+        }
 
         setContent {
             AutoDriveTheme {
@@ -100,7 +118,7 @@ class ClientActivity : ComponentActivity(), ClientContract.View {
                     noteMoyenne = noteMoyenneState,
                     nombreEvaluations = nombreEvaluationsState,
                     userHasEvaluated = userHasEvaluatedState,
-                    currentUserId = userSession.getCurrentUserId(),
+                    currentUserId = currentUserIdState,
                     recherche = recherche,
                     marqueFiltre = marqueFiltre,
                     modeleFiltre = modeleFiltre,
@@ -134,12 +152,7 @@ class ClientActivity : ComponentActivity(), ClientContract.View {
     }
 
     private fun chargerEvaluations(voitureId: Long) {
-        evaluationsState = evaluationRepository.getEvaluationsParVoiture(voitureId)
-        noteMoyenneState = evaluationRepository.getNoteMoyenne(voitureId)
-        nombreEvaluationsState = evaluationRepository.getNombreEvaluations(voitureId)
-        
-        val userId = userSession.getCurrentUserId()
-        userHasEvaluatedState = evaluationRepository.getEvaluationUtilisateur(userId, voitureId) != null
+        evaluationPresenter.chargerEvaluations(voitureId)
     }
 
     private fun chargerVoitures() {
@@ -230,6 +243,33 @@ class ClientActivity : ComponentActivity(), ClientContract.View {
 
     override fun afficherVoitures(voitures: List<Voiture>) {
         voituresState = voitures
+    }
+
+    override fun afficherEvaluations(state: EvaluationVoitureUiState) {
+        evaluationsState = state.evaluations
+        noteMoyenneState = state.noteMoyenne
+        nombreEvaluationsState = state.nombreEvaluations
+        userHasEvaluatedState = state.utilisateurADejaEvalue
+        currentUserIdState = state.utilisateurId
+    }
+
+    override fun afficherEvaluationAEditer(evaluation: com.example.autodrive.model.entity.Evaluation?) = Unit
+
+    override fun afficherErreur(message: String) = Unit
+
+    override fun evaluationEnregistree() = Unit
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putLong("selected_voiture_id", selectedVoitureId)
+        outState.putString("recherche", recherche)
+        outState.putString("marque_filtre", marqueFiltre)
+        outState.putString("modele_filtre", modeleFiltre)
+        outState.putString("prix_min_filtre", prixMinFiltre)
+        outState.putString("prix_max_filtre", prixMaxFiltre)
+        outState.putString("annee_filtre", anneeFiltre)
+        outState.putBoolean("show_only_disponible", showOnlyDisponible)
+        outState.putBoolean("show_filter_dialog", showFilterDialog)
     }
 }
 

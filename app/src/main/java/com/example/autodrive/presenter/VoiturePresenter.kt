@@ -28,4 +28,45 @@ class VoiturePresenter(
         voitureRepository.update(voiture)
         chargerVoitures()
     }
+
+    override fun enregistrerVoitureDepuisFormulaire(
+        id: Long,
+        marque: String,
+        modele: String,
+        annee: String,
+        prixParJour: String,
+        estDisponible: Boolean,
+        imageUrls: String,
+        description: String
+    ) {
+        val anneeNumerique = annee.toIntOrNull()
+        val prixNumerique = prixParJour.toDoubleOrNull()
+
+        when {
+            marque.isBlank() -> view.afficherMessage("Veuillez entrer une marque.")
+            modele.isBlank() -> view.afficherMessage("Veuillez entrer un modele.")
+            anneeNumerique == null -> view.afficherMessage("Veuillez entrer une annee valide.")
+            prixNumerique == null -> view.afficherMessage("Veuillez entrer un prix valide.")
+            prixNumerique <= 0.0 -> view.afficherMessage("Le prix doit etre superieur a 0.")
+            else -> {
+                val voiture = Voiture(
+                    id = id,
+                    marque = marque.trim(),
+                    modele = modele.trim(),
+                    annee = anneeNumerique,
+                    prixParJour = prixNumerique,
+                    estDisponible = estDisponible,
+                    imageUrls = imageUrls.trim().ifBlank { null },
+                    description = description.trim().ifBlank { null },
+                    ageMinimum = 18
+                )
+
+                if (id == 0L) {
+                    ajouterVoiture(voiture)
+                } else {
+                    modifierVoiture(voiture)
+                }
+            }
+        }
+    }
 }

@@ -5,10 +5,25 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -17,30 +32,31 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.autodrive.model.repository.UtilisateurRepository
 import com.example.autodrive.model.session.UserSession
+import com.example.autodrive.presenter.LoginPresenter
+import com.example.autodrive.presenter.contract.LoginContract
 import com.example.autodrive.ui.theme.AutoDriveTheme
 
-class LoginActivity : ComponentActivity() {
+class LoginActivity : ComponentActivity(), LoginContract.View {
+
+    private lateinit var presenter: LoginPresenter
+    private var erreurState by mutableStateOf("")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val session = UserSession(applicationContext)
-
-        // Si déjà connecté → aller directement au menu
-        if (session.isLoggedIn()) {
-            startActivity(Intent(this, MainActivity::class.java))
-            finish()
-            return
-        }
+        presenter = LoginPresenter(
+            this,
+            UtilisateurRepository(applicationContext),
+            UserSession(applicationContext)
+        )
+        presenter.verifierSessionExistante()
+        if (isFinishing) return
 
         setContent {
             AutoDriveTheme {
-                val userRepo = UtilisateurRepository(applicationContext)
-
-                var nom    by remember { mutableStateOf("") }
-                var prenom by remember { mutableStateOf("") }
-                var email  by remember { mutableStateOf("") }
-                var erreur by remember { mutableStateOf("") }
+                var nom by rememberSaveable { mutableStateOf("") }
+                var prenom by rememberSaveable { mutableStateOf("") }
+                var email by rememberSaveable { mutableStateOf("") }
 
                 Column(
                     modifier = Modifier
@@ -50,7 +66,6 @@ class LoginActivity : ComponentActivity() {
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-
                     Text(
                         "AutoDrive",
                         style = MaterialTheme.typography.displaySmall,
@@ -80,7 +95,7 @@ class LoginActivity : ComponentActivity() {
                     OutlinedTextField(
                         value = prenom,
                         onValueChange = { prenom = it },
-                        label = { Text("Prénom") },
+                        label = { Text("Prenom") },
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
@@ -99,14 +114,14 @@ class LoginActivity : ComponentActivity() {
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    if (erreur.isNotEmpty()) {
+                    if (erreurState.isNotEmpty()) {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
                             colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE))
                         ) {
                             Text(
-                                erreur,
+                                erreurState,
                                 modifier = Modifier.padding(14.dp),
                                 color = Color(0xFFC62828),
                                 style = MaterialTheme.typography.bodyMedium
@@ -117,22 +132,8 @@ class LoginActivity : ComponentActivity() {
 
                     Button(
                         onClick = {
-                            erreur = ""
-                            when {
-                                nom.isBlank()    -> erreur = "Veuillez entrer votre nom."
-                                prenom.isBlank() -> erreur = "Veuillez entrer votre prénom."
-                                email.isBlank()  -> erreur = "Veuillez entrer votre email."
-                                else -> {
-                                    val user = userRepo.findOrCreate(
-                                        nom    = nom.trim(),
-                                        prenom = prenom.trim(),
-                                        email  = email.trim().lowercase()
-                                    )
-                                    session.saveCurrentUserId(user.id)
-                                    startActivity(Intent(this@LoginActivity, MainActivity::class.java))
-                                    finish()
-                                }
-                            }
+                            erreurState = ""
+                            presenter.connecter(nom, prenom, email)
                         },
                         shape = RoundedCornerShape(50),
                         modifier = Modifier
@@ -144,5 +145,14 @@ class LoginActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun afficherErreur(message: String) {
+        erreurState = message
+    }
+
+    override fun ouvrirMenuPrincipal() {
+        startActivity(Intent(this, MainActivity::class.java))
+        finish()
     }
 }

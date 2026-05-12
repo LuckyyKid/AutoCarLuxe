@@ -21,7 +21,16 @@ import com.example.autodrive.model.entity.Voiture
 fun AddVoitureScreen(
     voiture: Voiture? = null,
     onCancel: () -> Unit,
-    onSave: (Voiture) -> Unit
+    onSave: (
+        id: Long,
+        marque: String,
+        modele: String,
+        annee: String,
+        prixParJour: String,
+        estDisponible: Boolean,
+        imageUrls: String,
+        description: String
+    ) -> Unit
 ) {
 
     var marque by rememberSaveable(voiture?.id, stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue(voiture?.marque ?: "")) }
@@ -186,18 +195,16 @@ fun AddVoitureScreen(
 
         Button(
             onClick = {
-                val voitureFinale = Voiture(
-                    id = voiture?.id ?: 0,
-                    marque = marque.text,
-                    modele = modele.text,
-                    annee = annee.text.toInt(),
-                    prixParJour = prix.text.toDouble(),
-                    estDisponible = estDisponible,
-                    imageUrls = imageUrls.text,
-                    ageMinimum = 18,
-                    description = description.text
+                onSave(
+                    voiture?.id ?: 0L,
+                    marque.text,
+                    modele.text,
+                    annee.text,
+                    prix.text,
+                    estDisponible,
+                    imageUrls.text,
+                    description.text
                 )
-                onSave(voitureFinale)
             },
             shape = RoundedCornerShape(50),
             modifier = Modifier

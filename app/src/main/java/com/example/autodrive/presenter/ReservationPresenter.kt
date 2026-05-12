@@ -1,6 +1,5 @@
 package com.example.autodrive.presenter
 
-import com.example.autodrive.model.entity.Reservation
 import com.example.autodrive.model.repository.ReservationRepository
 import com.example.autodrive.model.repository.UtilisateurRepository
 import com.example.autodrive.model.session.UserSession
