@@ -1,6 +1,5 @@
 package com.example.autodrive
 
-import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -15,7 +14,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -25,10 +23,9 @@ import com.example.autodrive.model.entity.Voiture
 @Composable
 fun VoitureDetailScreen(
     voiture: Voiture,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onReserve: (Voiture) -> Unit
 ) {
-
-    val context = LocalContext.current
 
     val images = voiture.imageUrls
         ?.split(",")
@@ -192,11 +189,7 @@ fun VoitureDetailScreen(
 
 
             Button(
-                onClick = {
-                    val intent = Intent(context, ReservationActivity::class.java)
-                    intent.putExtra("voiture", voiture)
-                    context.startActivity(intent)
-                },
+                onClick = { onReserve(voiture) },
                 enabled = voiture.estDisponible,
                 shape = RoundedCornerShape(50),
                 colors = ButtonDefaults.buttonColors(

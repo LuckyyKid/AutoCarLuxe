@@ -5,14 +5,34 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,18 +45,24 @@ import com.example.autodrive.model.entity.Voiture
 import com.example.autodrive.model.repository.VoitureRepository
 import com.example.autodrive.presenter.VoiturePresenter
 import com.example.autodrive.presenter.contract.VoitureContract
-import com.example.autodrive.view.AddVoitureScreen
 import com.example.autodrive.ui.theme.AutoDriveTheme
+import com.example.autodrive.view.AddVoitureScreen
 
 class AdminActivity : ComponentActivity(), VoitureContract.View {
 
     private lateinit var presenter: VoiturePresenter
     private var voituresState by mutableStateOf<List<Voiture>>(emptyList())
+    private var showAddScreen by mutableStateOf(false)
+    private var voitureToEditId by mutableStateOf(0L)
+
+    private val voitureToEdit: Voiture?
+        get() = voituresState.firstOrNull { it.id == voitureToEditId }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         presenter = VoiturePresenter(this, VoitureRepository(applicationContext))
+        presenter.chargerVoitures()
 
         setContent {
             AutoDriveTheme {
@@ -239,6 +265,30 @@ class AdminActivity : ComponentActivity(), VoitureContract.View {
                 }
             }
         }
+    }
+
+    private fun ouvrirAjoutVoiture() {
+        voitureToEditId = 0L
+        showAddScreen = true
+    }
+
+    private fun ouvrirModificationVoiture(voitureId: Long) {
+        voitureToEditId = voitureId
+        showAddScreen = true
+    }
+
+    private fun fermerFormulaireVoiture() {
+        voitureToEditId = 0L
+        showAddScreen = false
+    }
+
+    private fun enregistrerVoiture(voiture: Voiture) {
+        if (voitureToEdit == null) {
+            presenter.ajouterVoiture(voiture)
+        } else {
+            presenter.modifierVoiture(voiture)
+        }
+        fermerFormulaireVoiture()
     }
 
     override fun afficherVoitures(voitures: List<Voiture>) {
