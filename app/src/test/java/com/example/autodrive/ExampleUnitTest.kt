@@ -33,6 +33,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import kotlin.collections.emptyList
 
 class ExampleUnitTest {
 
@@ -451,5 +452,51 @@ class ExampleUnitTest {
         override fun afficherFiltre(statut: String) {
             filtreAffiche = statut
         }
+    }
+
+    // ── Tests de Myguel ─────────────────────────────────────────
+
+    @Test
+    fun `Quand le Presenter charge les voitures Alors la View recoit la liste complete`() {
+        val mockRepo = mock<VoitureRepository>()
+        val mockView = mock<VoitureContract.View>()
+        val presenter = VoiturePresenter(mockView, mockRepo)
+        val voitures = listOf(
+            Voiture(1L, "BMW",  "M3", 2023, 150.0, true, null, null, 18),
+            Voiture(2L, "Audi", "A4", 2021, 120.0, true, null, null, 18)
+        )
+        whenever(mockRepo.getAll()).thenReturn(voitures)
+
+        presenter.chargerVoitures()
+
+        verify(mockRepo).getAll()
+        verify(mockView).afficherVoitures(voitures)
+    }
+
+    @Test
+    fun `Quand le Presenter ajoute une voiture Alors le repository insere et la vue est mise a jour`() {
+        val mockRepo = mock<VoitureRepository>()
+        val mockView = mock<VoitureContract.View>()
+        val presenter = VoiturePresenter(mockView, mockRepo)
+        val nouvelleVoiture = Voiture(0L, "BMW", "M3", 2023, 150.0, true, null, null, 18)
+        val listeApresAjout = listOf(Voiture(1L, "BMW", "M3", 2023, 150.0, true, null, null, 18))
+        whenever(mockRepo.getAll()).thenReturn(listeApresAjout)
+
+        presenter.ajouterVoiture(nouvelleVoiture)
+
+        verify(mockRepo).insert(nouvelleVoiture)
+        verify(mockView).afficherVoitures(listeApresAjout)
+    }
+
+    @Test
+    fun `Quand le Presenter supprime une voiture Alors le repository supprime par identifiant`() {
+        val mockRepo = mock<VoitureRepository>()
+        val mockView = mock<VoitureContract.View>()
+        val presenter = VoiturePresenter(mockView, mockRepo)
+        whenever(mockRepo.getAll()).thenReturn(emptyList())
+
+        presenter.supprimerVoiture(42L)
+
+        verify(mockRepo).deleteById(42L)
     }
 }

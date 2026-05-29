@@ -25,7 +25,8 @@ class MainActivity : ComponentActivity() {
             AutoDriveTheme {
                 MainScreen(
                     onClientClicked = ::ouvrirEspaceClient,
-                    onAdminClicked = ::ouvrirEspaceAdmin
+                    onAdminClicked  = ::ouvrirEspaceAdmin,
+                    onProfilClicked = ::ouvrirProfil        // ← ajouté
                 )
             }
         }
@@ -38,12 +39,17 @@ class MainActivity : ComponentActivity() {
     private fun ouvrirEspaceAdmin() {
         startActivity(Intent(this, AdminActivity::class.java))
     }
+
+    private fun ouvrirProfil() {
+        startActivity(Intent(this, ProfilActivity::class.java))
+    }
 }
 
 @androidx.compose.runtime.Composable
 private fun MainScreen(
     onClientClicked: () -> Unit,
-    onAdminClicked: () -> Unit
+    onAdminClicked:  () -> Unit,
+    onProfilClicked: () -> Unit   // ← ajouté
 ) {
     Column(
         modifier = Modifier
@@ -90,6 +96,20 @@ private fun MainScreen(
                 .height(56.dp)
         ) {
             Text("Espace Admin", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        TextButton(
+            onClick = onProfilClicked,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                "Mon profil",
+                fontWeight = FontWeight.Medium,
+                fontSize = 14.sp,
+                color = Color(0xFF888888)
+            )
         }
     }
 }
