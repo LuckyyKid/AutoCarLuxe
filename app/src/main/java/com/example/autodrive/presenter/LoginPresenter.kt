@@ -21,6 +21,7 @@ class LoginPresenter(
             nom.isBlank() -> view.afficherErreur("Veuillez entrer votre nom.")
             prenom.isBlank() -> view.afficherErreur("Veuillez entrer votre prenom.")
             email.isBlank() -> view.afficherErreur("Veuillez entrer votre email.")
+            !email.contains("@") -> view.afficherErreur("Format d'email invalide.")
             else -> {
                 val utilisateur = utilisateurRepository.findOrCreate(
                     nom = nom.trim(),

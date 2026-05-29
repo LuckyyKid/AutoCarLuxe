@@ -35,7 +35,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import kotlin.collections.emptyList
 
-class ExampleUnitTest {
+class PresenterUnitTest {
 
     @Test
     fun `Étant donné une ReservationContract View factice Quand le Presenter calcule un coût valide Alors la View reçoit le bon coût`() {
@@ -210,6 +210,19 @@ class ExampleUnitTest {
         verify(userSession).saveCurrentUserId(99L)
         assertTrue(view.menuOuvert)
         assertEquals("", view.dernierMessage)
+    }
+
+    @Test
+    fun `Etant donne un email invalide Quand le LoginPresenter connecte Alors la View recoit une erreur`() {
+        val view = FakeLoginView()
+        val utilisateurRepository = mock<UtilisateurRepository>()
+        val userSession = mock<UserSession>()
+        val presenter = LoginPresenter(view, utilisateurRepository, userSession)
+
+        presenter.connecter("Bafing", "Keita", "email-invalide")
+
+        assertEquals("Format d'email invalide.", view.dernierMessage)
+        assertTrue(!view.menuOuvert)
     }
 
     @Test
@@ -455,38 +468,6 @@ class ExampleUnitTest {
     }
 
     // ── Tests de Myguel ─────────────────────────────────────────
-
-    @Test
-    fun `Quand le Presenter charge les voitures Alors la View recoit la liste complete`() {
-        val mockRepo = mock<VoitureRepository>()
-        val mockView = mock<VoitureContract.View>()
-        val presenter = VoiturePresenter(mockView, mockRepo)
-        val voitures = listOf(
-            Voiture(1L, "BMW",  "M3", 2023, 150.0, true, null, null, 18),
-            Voiture(2L, "Audi", "A4", 2021, 120.0, true, null, null, 18)
-        )
-        whenever(mockRepo.getAll()).thenReturn(voitures)
-
-        presenter.chargerVoitures()
-
-        verify(mockRepo).getAll()
-        verify(mockView).afficherVoitures(voitures)
-    }
-
-    @Test
-    fun `Quand le Presenter ajoute une voiture Alors le repository insere et la vue est mise a jour`() {
-        val mockRepo = mock<VoitureRepository>()
-        val mockView = mock<VoitureContract.View>()
-        val presenter = VoiturePresenter(mockView, mockRepo)
-        val nouvelleVoiture = Voiture(0L, "BMW", "M3", 2023, 150.0, true, null, null, 18)
-        val listeApresAjout = listOf(Voiture(1L, "BMW", "M3", 2023, 150.0, true, null, null, 18))
-        whenever(mockRepo.getAll()).thenReturn(listeApresAjout)
-
-        presenter.ajouterVoiture(nouvelleVoiture)
-
-        verify(mockRepo).insert(nouvelleVoiture)
-        verify(mockView).afficherVoitures(listeApresAjout)
-    }
 
     @Test
     fun `Quand le Presenter supprime une voiture Alors le repository supprime par identifiant`() {

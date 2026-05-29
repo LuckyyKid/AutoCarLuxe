@@ -96,7 +96,7 @@ class LoginActivity : ComponentActivity(), LoginContract.View {
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         // ── Validation visuelle du format email ──────────
-                        isError = email.isNotBlank() && !email.contains("@")
+                        isError = erreurState == "Format d'email invalide."
                     )
 
                     Spacer(modifier = Modifier.height(24.dp))
@@ -123,11 +123,7 @@ class LoginActivity : ComponentActivity(), LoginContract.View {
                     Button(
                         onClick = {
                             // ── Validation format email avant d'appeler le presenter ──
-                            if (email.isNotBlank() && !email.contains("@")) {
-                                erreurState = "Format d'email invalide."
-                            } else {
-                                presenter.connecter(nom, prenom, email)
-                            }
+                            presenter.connecter(nom, prenom, email)
                         },
                         shape = RoundedCornerShape(50),
                         modifier = Modifier
